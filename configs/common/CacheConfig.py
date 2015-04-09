@@ -97,7 +97,7 @@ class L2Config(object):
             '1024kB' : '6.5ns',
         }
 
-    def connect_l1( self ): return
+    def connect_l1( self, system ): return
 
 class L2Shared( L2Config ):
     def __init__( self, options, system ):
@@ -111,7 +111,7 @@ class L2Shared( L2Config ):
         system.l2.cpu_side = system.tol2bus.master
         system.l2.mem_side = system.membus.slave
 
-    def connect_l1( self ):
+    def connect_l1( self, system ):
         for i in xrange( self.options.num_cpus ):
             system.cpu[i].connectAllPorts(system.tol2bus)
 
@@ -134,7 +134,7 @@ class L2Private( L2Config ):
             system.l2[i].cpu_side = system.tol2bus[i].master
             self.system.l2[i].mem_side = system.membus.slave
 
-    def connect_l1( self ):
+    def connect_l1( self, system ):
         for i in xrange( self.options.num_cpus ):
             system.cpu[i].connectAllPorts(system.tol2bus[i])
             
@@ -168,7 +168,7 @@ def config_cache(options, system):
             l2config = L2Shared( options, system )
         else:
             l2config = L2Private( options, system )
-        l2config.connect_l1()
+        l2config.connect_l1( system )
 
     #-------------------------------------------------------------------------
     # L3
