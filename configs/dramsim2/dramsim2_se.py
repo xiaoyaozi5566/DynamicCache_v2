@@ -67,37 +67,18 @@ Options.addSEOptions(parser)
 ######################################################################
 # custom options, help yourself to add any options for the convenience
 
-### DRAMSim2
-parser.add_option("--dramsim2", action="store_true")
-if '--dramsim2' in sys.argv:
-    parser.add_option("--devicecfg", type="string", default="",
-            help="device configuration file to be used by DRAMSim2")
-    parser.add_option("--systemcfg", type="string", default="", 
-            help="system configuration file to be used by DRAMSim2")
-    parser.add_option("--tpturnlength", type="string", default="12",
-            help="Turn length for TP. Unused if another scheme is used.")
-    parser.add_option("--outputfile", type="string", default="",
-            help="output file for DRAMSim results."),
-    parser.add_option("--fixaddr", action="store_true", default=False,
-    		help="fixed the address mapping of each application")
-    parser.add_option("--diffperiod", action="store_true", default=False,
-    		help="use different periods for different security domains")
-    parser.add_option("--p0period", type="int", default=64,
-    		help="period for security domain 0")
-    parser.add_option("--p1period", type="int", default=64,
-    		help="period for security domain 1")
-    parser.add_option("--p0", type="string", 
-            help="workload for processor 0."),
-    parser.add_option("--p1", type="string",
-            help="workload for processor 1.")
-    parser.add_option("--p2",type="string", default="echo \"no p2!\"",
-            help="workload for processor 2, default is an echo")
-    parser.add_option("--p3",type="string", default="echo \"no p3!\"",
-            help="workload for processor 3, default is an echo")
-    parser.add_option("--gentrace", action="store_true", default=False,
-            help="generate the trace for benchmarks.")
-    parser.add_option("--numpids", type="int", default=2,
-            help="determine the number of PIDs")
+parser.add_option("--fixaddr", action="store_true", default=False,
+		help="fixed the address mapping of each application")
+parser.add_option("--p0", type="string", 
+        help="workload for processor 0."),
+parser.add_option("--p1", type="string",
+        help="workload for processor 1.")
+parser.add_option("--p2",type="string", default="echo \"no p2!\"",
+        help="workload for processor 2, default is an echo")
+parser.add_option("--p3",type="string", default="echo \"no p3!\"",
+        help="workload for processor 3, default is an echo")
+parser.add_option("--numpids", type="int", default=2,
+        help="determine the number of PIDs")
 ######################################################################
 
 ######################################################################
@@ -132,45 +113,16 @@ else:
 if options.fixaddr :
     memorysize = '4096MB'
 
-### instantiate the DRAMSim2 model if we enable it
-if options.dramsim2 :
-    DRAM = DRAMSim2(    # memory capacity
-                        range = AddrRange(memorysize),
-                        # cpu clock to do synchronization
-                        cpu_clock=options.clock,
-                        # device (timing and power) configure file
-                        deviceConfigFile = options.devicecfg,
-                        # system (channel number, scheduling policy) configure file
-                        systemConfigFile=options.systemcfg,
-                        # output file for DRAMSim results
-                        outputFile=options.outputfile,
-                        #TP Turn Length
-                        tpTurnLength=options.tpturnlength,
-                        #Generate trace
-                        genTrace=options.gentrace,
-                        #Number of PIDs
-                        numPids=options.numpids,
-                        #Use fixed address mapping
-                        fixAddr=options.fixaddr,
-                        #Use different periods
-                        diffPeriod=options.diffperiod,
-                        #Period for thread 0
-                        p0Period=options.p0period,
-                        #Period for thread 1
-                        p1Period=options.p1period
-                    );
-else: # or we just use the original memory model
-    DRAM = SimpleMemory( range = AddrRange(memorysize) )
+DRAM = SimpleMemory( range = AddrRange(memorysize) )
 ######################################################################
-
 
 ##### Cache Configuration #####
 options.l1d_size="32kB"
 options.l1d_assoc=2
 options.l1i_size="32kB"
 options.l1i_assoc=2
-options.l2_size="256kB"
-options.l2_assoc=8
+options.l2_size="2048kB"
+options.l2_assoc=16
                   
 multiprocesses = []
 apps = []
@@ -276,11 +228,8 @@ CPUClass.clock = options.clock
 CPUClass.numThreads = numThreads;
 
 system = System(cpu = [CPUClass(cpu_id=i) for i in xrange(np)],
-                l2 = [L2Cache(size = options.l2_size, assoc = options.l2_assoc,
-                                block_size=options.cacheline_size) for i in xrange(np)],
-                tol2bus = [CoherentBus() for i in xrange(np)],
                 physmem = DRAM,
-                membus = CoherentBus(), 
+                membus = NoncoherentBus(), 
                 mem_mode = test_mem_mode,
                 numPids = options.numpids,
                 fixAddr = options.fixaddr)
@@ -328,4 +277,4 @@ else:
     CacheConfig.config_cache(options, system)
 
 root = Root(full_system = False, system = system)
-Simulation.run(options, root, system, FutureClass,options.numpids)
+Simulation.run(options, root, system, FutureClass, options.numpids)

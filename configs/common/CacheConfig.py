@@ -34,51 +34,123 @@ from m5.objects import *
 from Caches import *
 from O3_ARM_v7a import *
 
-def config_cache(options, system):
-    if options.l3cache:
-        if options.cpu_type == "arm_detailed":
-            system.l3 = O3_ARM_v7aL2(size = options.l3_size, assoc = options.l3_assoc,
-                                block_size=options.cacheline_size)
-        else: 
-            latencies = {
-                    '4MB' : '8.48ns',
-                    '3MB' : '7.5',
-                    '2MB' : '6.5ns',
-                    '1MB' : '5ns'
-            }
-            system.l3 = L3Cache(size = options.l3_size, 
-                                latency=latencies[options.l3_size],
-                                assoc = options.l3_assoc,
-                                block_size=options.cacheline_size)
+class L3Config(object):
+    def __init__( self, options, system ):
+        self.options = options
+        self.system = system
+        self.latencies = {
+            '4096kB' : '8.48ns',
+            '3072kB' : '7.5',
+            '2048kB' : '6.5ns',
+            '1024kB' : '6.5ns',
+        }
 
+    def connect_l2( self ): return
 
-        system.tol3bus = CoherentBus()
+class L3Shared( L3Config ):
+    def __init__( self, options, system ):
+        super( L3Shared, self ).__init__( options, system )
+        system.l3 = L3Cache(size = options.l3_size, 
+                            latency=self.latencies[options.l3_size],
+                            assoc = options.l3_assoc,
+                            block_size=options.cacheline_size)
+
+        system.tol3bus = NoncoherentBus()
         system.l3.cpu_side = system.tol3bus.master
         system.l3.mem_side = system.membus.slave
-        	
-    if options.l2cache:
-        if options.cpu_type == "arm_detailed":
-            system.l2_0 = O3_ARM_v7aL2(size = options.l2_size, assoc = options.l2_assoc,
-                                block_size=options.cacheline_size)
-            system.l2_1 = O3_ARM_v7aL2(size = options.l2_size, assoc = options.l2_assoc,
-                                block_size=options.cacheline_size)
 
+    def connect_l2( self ):
+        for i in xrange( self.options.num_cpus ):
+            self.system.l2[i].mem_side = self.system.tol3bus.slave
+
+class L3Private( L3Config ):
+    def __init__( self, options, system ):
+        super( L3Private , self ).__init__( options, system )
+        system.l3 = [
+                L3Cache(
+                    size = options.l3_size,
+                    latency = self.latencies[options.l3_size],
+                    assoc = options.l3_assoc,
+                    block_size = options.cacheline_size
+                )
+                for i in xrange( options.num_cpus )
+            ]
+
+        system.tol3bus = [NoncoherentBus() for i in xrange( options.num_cpus ) ]
+
+        for i in xrange( options.num_cpus ):
+            system.l3[i].cpu_side = system.tol3bus[i].master
+            system.l3[i].mem_side = system.membus.slave
+
+    def connect_l2( self ):
+        for i in xrange( self.options.num_cpus ):
+            self.system.l2[i].mem_side = self.system.tol3bus[i].slave
+
+class L2Config(object):
+    def __init__( self, options, system ):
+        self.options = options
+        self.system = system
+        self.latencies = {
+            '4096kB' : '8.48ns',
+            '3072kB' : '7.5',
+            '2048kB' : '6.5ns',
+            '1024kB' : '6.5ns',
+        }
+
+    def connect_l1( self ): return
+
+class L2Shared( L2Config ):
+    def __init__( self, options, system ):
+        super( L2Shared, self ).__init__( options, system )
+        system.l2 = L2Cache(size = options.l2_size, 
+                            latency=self.latencies[options.l2_size],
+                            assoc = options.l2_assoc,
+                            block_size=options.cacheline_size)
+
+        system.tol2bus = NoncoherentBus()
+        system.l2.cpu_side = system.tol2bus.master
+        system.l2.mem_side = system.membus.slave
+
+    def connect_l1( self ):
+        for i in xrange( self.options.num_cpus ):
+            system.cpu[i].connectAllPorts(system.tol2bus)
+
+class L2Private( L2Config ):
+    def __init__( self, options, system ):
+        super( L2Private , self ).__init__( options, system )
+        system.l2 = [
+                L2Cache(
+                    size = options.l2_size,
+                    latency = self.latencies[options.l2_size],
+                    assoc = options.l2_assoc,
+                    block_size = options.cacheline_size
+                )
+                for i in xrange( options.num_cpus )
+            ]
+
+        system.tol2bus = [NoncoherentBus() for i in xrange( options.num_cpus ) ]
+
+        for i in xrange( options.num_cpus ):
+            system.l2[i].cpu_side = system.tol2bus[i].master
+            self.system.l2[i].mem_side = system.membus.slave
+
+    def connect_l1( self ):
+        for i in xrange( self.options.num_cpus ):
+            system.cpu[i].connectAllPorts(system.tol2bus[i])
+            
+def config_cache(options, system):
+
+    #-------------------------------------------------------------------------
+    # L1
+    #-------------------------------------------------------------------------
     for i in xrange(options.num_cpus):
         if options.caches:
-            if options.cpu_type == "arm_detailed":
-                icache = O3_ARM_v7a_ICache(size = options.l1i_size,
-                                     assoc = options.l1i_assoc,
-                                     block_size=options.cacheline_size)
-                dcache = O3_ARM_v7a_DCache(size = options.l1d_size,
-                                     assoc = options.l1d_assoc,
-                                     block_size=options.cacheline_size)
-            else:
-                icache = L1Cache(size = options.l1i_size,
-                                 assoc = options.l1i_assoc,
-                                 block_size=options.cacheline_size)
-                dcache = L1Cache(size = options.l1d_size,
-                                 assoc = options.l1d_assoc,
-                                 block_size=options.cacheline_size)
+            icache = L1Cache(size = options.l1i_size,
+                             assoc = options.l1i_assoc,
+                             block_size=options.cacheline_size)
+            dcache = L1Cache(size = options.l1d_size,
+                             assoc = options.l1d_assoc,
+                             block_size=options.cacheline_size)
 
             if buildEnv['TARGET_ISA'] == 'x86':
                 system.cpu[i].addPrivateSplitL1Caches(icache, dcache,
@@ -87,15 +159,26 @@ def config_cache(options, system):
             else:
                 system.cpu[i].addPrivateSplitL1Caches(icache, dcache)
         system.cpu[i].createInterruptController()
-        if options.l2cache:
-            system.cpu[i].connectAllPorts(system.tol2bus[i])
-            system.l2[i].cpu_side = system.tol2bus[i].master
-            if options.l3cache:
-                system.l2[i].mem_side = system.tol3bus.slave
-            else:
-                system.l2[i].mem_side = system.membus.slave
-        else:
-            system.cpu[i].connectAllPorts(system.membus)
 
+    #-------------------------------------------------------------------------
+    # L2
+    #-------------------------------------------------------------------------
+    if options.l2cache:
+        if options.l2config == "shared":
+            l2config = L2Shared( options, system )
+        else:
+            l2config = L2Private( options, system )
+        l2config.connect_l1()
+
+    #-------------------------------------------------------------------------
+    # L3
+    #-------------------------------------------------------------------------
+    if options.l3cache:
+        if options.l3config == "shared":
+            l3config = L3Shared( options, system )
+        else:
+            l3config = L3Private( options, system )
+        if options.l3cache:
+            l3config.connect_l2()
 
     return system
