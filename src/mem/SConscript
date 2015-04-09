@@ -57,10 +57,6 @@ if env['TARGET_ISA'] != 'no':
     Source('simple_mem.cc')
     Source('page_table.cc')
     Source('physical.cc')
-    SimObject('DRAMSim2Wrapper.py')
-    Source('DRAMSim2Wrapper.cc')
-    SimObject('DRAMSim2.py')
-    Source('DRAMSim2.cc')
 
 DebugFlag('BaseBus')
 DebugFlag('BusAddrRanges')

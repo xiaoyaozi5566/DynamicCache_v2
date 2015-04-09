@@ -38,9 +38,6 @@
 #include "sim/sim_exit.hh"
 #include "sim/simulate.hh"
 #include "sim/stat_control.hh"
-#include "MultiChannelMemorySystem.h"
-
-extern DRAMSim::MultiChannelMemorySystem *dramsim2;
 
 /** Simulate for num_cycles additional cycles.  If num_cycles is -1
  * (the default), do not limit simulation; some other event must
@@ -63,13 +60,6 @@ simulate(Tick num_cycles, int numPids)
     mainEventQueue.schedule(limit_event, num_cycles);
 
     while (1) {
-        // if there is DRAMsim2
-        if (dramsim2) {
-            while (dramsim2->currentClockCycle * tCK * 1000 < mainEventQueue.nextTick()) {
-                dramsim2->update();
-                //std::cout << "memory update" << std::endl;
-            }
-        }
         // there should always be at least one event (the SimLoopExitEvent
         // we just scheduled) in the queue
         assert(!mainEventQueue.empty());
@@ -95,9 +85,6 @@ simulate(Tick num_cycles, int numPids)
                 limit_event->squash();
                 hack_once("be nice to actually delete the event here");
             }
-
-            if (dramsim2)
-                dramsim2->printStats();
 
             return se_event;
         }
