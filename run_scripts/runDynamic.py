@@ -6,6 +6,8 @@ gem5home = os.getcwd()
 specint_dir = "benchmarks/spec2k6bin/specint"
 scriptgen_dir = gem5home + "/scriptgen"
 results_dir = gem5home + "/results"
+stdout_dir = gem5home + "/stdout"
+stderr_dir = gem5home + "/stderr"
 
 specint = ['bzip2', 'gcc', 'mcf', 'gobmk', 'hmmer', 'sjeng', 'libquantum', 'h264ref', 'astar', 'xalan']
 
@@ -19,7 +21,7 @@ specintinvoke = [
     specint_dir + "/libquantum 1397 8",
     specint_dir + "/h264ref -d " + specint_dir + "/foreman_ref_encoder_baseline.cfg",
     specint_dir + "/astar " + specint_dir + "/BigLakes2048.cfg",
-    specint_dir + "/Xalan -v " + specint_dir + "t5.xml " + specint_dir + "/xalanc.xsl"  
+    specint_dir + "/Xalan -v " + specint_dir + "/t5.xml " + specint_dir + "/xalanc.xsl"  
 ]
 
 if not os.path.exists(scriptgen_dir):
@@ -28,11 +30,17 @@ if not os.path.exists(scriptgen_dir):
 if not os.path.exists(results_dir):
     os.makedirs(results_dir)
 
+if not os.path.exists(stdout_dir):
+    os.makedirs(stdout_dir)
+
+if not os.path.exists(stderr_dir):
+    os.makedirs(stderr_dir)
+
 for i in range(len(specint)):
     for j in range(len(specint)):
         p0 = specint[i]
         p1 = specint[j]
-        script = open(scriptgen_dir + "/" + p0 + "_" + p1, "w")
+        script = open(scriptgen_dir + "/run_" + p0 + "_" + p1, "w")
         command = "#!/bin/bash\n"
         command += "build/ARM/gem5.fast \\\n"
         command += "    --remote-gdb-port=0 \\\n"
@@ -51,5 +59,7 @@ for i in range(len(specint)):
         command += "    --p1='" + specintinvoke[j] + "'\\\n"
         command += "    > " + results_dir + "/stdout_" + p0 + "_" + p1 + ".out"
         
-        script.write("%s " % command)
+        script.write("%s\n" % command)
         script.close()
+        
+        os.system("qsub -cwd -e stderr/ -o stdout/ " + scriptgen_dir + "/run_" + p0 + "_" + p1 )
