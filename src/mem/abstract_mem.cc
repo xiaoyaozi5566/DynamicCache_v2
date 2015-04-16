@@ -76,11 +76,11 @@ AbstractMemory::AbstractMemory(const Params *p) :
         return;
 
     if (params()->file == "") {
-        int map_flags = MAP_ANON | MAP_PRIVATE;
+        int map_flags = MAP_ANON | MAP_PRIVATE | MAP_NORESERVE;
         pmemAddr = (uint8_t *)mmap(NULL, size(),
                                    PROT_READ | PROT_WRITE, map_flags, -1, 0);
     } else {
-        int map_flags = MAP_PRIVATE;
+        int map_flags = MAP_PRIVATE | MAP_NORESERVE;
         int fd = open(params()->file.c_str(), O_RDONLY);
         long _size = lseek(fd, 0, SEEK_END);
         if (_size != range.size()) {
@@ -551,7 +551,7 @@ AbstractMemory::unserialize(Checkpoint *cp, const string &section)
               _size, params()->range.size());
 
     pmemAddr = (uint8_t *)mmap(NULL, size(),
-        PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+        PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE | MAP_NORESERVE, -1, 0);
 
     if (pmemAddr == (void *)MAP_FAILED) {
         perror("mmap");

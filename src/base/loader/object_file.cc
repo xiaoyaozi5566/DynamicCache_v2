@@ -119,7 +119,7 @@ createObjectFile(const string &fname, bool raw)
 
     // mmap the whole shebang
     uint8_t *fileData =
-        (uint8_t *)mmap(NULL, len, PROT_READ, MAP_SHARED, fd, 0);
+        (uint8_t *)mmap(NULL, len, PROT_READ, MAP_SHARED | MAP_NORESERVE, fd, 0);
     if (fileData == MAP_FAILED) {
         close(fd);
         return NULL;
