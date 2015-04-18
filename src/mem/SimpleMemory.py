@@ -45,5 +45,5 @@ from AbstractMemory import *
 class SimpleMemory(AbstractMemory):
     type = 'SimpleMemory'
     port = SlavePort("Slave ports")
-    latency = Param.Latency('30ns', "Request to response latency")
+    latency = Param.Latency('100ns', "Request to response latency")
     latency_var = Param.Latency('0ns', "Request to response latency variance")
