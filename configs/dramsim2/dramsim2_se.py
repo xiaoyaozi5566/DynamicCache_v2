@@ -121,8 +121,8 @@ options.l1d_size="32kB"
 options.l1d_assoc=2
 options.l1i_size="32kB"
 options.l1i_assoc=2
-options.l2_size="2048kB"
-options.l2_assoc=16
+# options.l2_size="2048kB"
+# options.l2_assoc=16
                   
 multiprocesses = []
 apps = []
