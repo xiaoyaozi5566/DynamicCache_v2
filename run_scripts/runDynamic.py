@@ -25,6 +25,8 @@ specintinvoke = [
     specint_dir + "/Xalan -v " + specint_dir + "/t5.xml " + specint_dir + "/xalanc.xsl"  
 ]
 
+cpus = ["timing", "detailed"]
+
 if not os.path.exists(scriptgen_dir):
     os.makedirs(scriptgen_dir)
 
@@ -109,36 +111,38 @@ def multiprogs():
 l2_size = ['1', '128', '256', '384', '512', '640', '768', '896', '1024', '1152', '1280', '1408', '1536', '1664', '1792', '1920', '2048']
 
 def miss_curve():
-    for i in range(len(specint)):
-        for j in range(len(l2_size)):
-            p0 = specint[i]
-            l2_assoc = j
-            if l2_assoc == 0:
-                l2_assoc = 1
-            script = open(scriptgen_dir + "/run_" + p0 + "_" + l2_size[j], "w")
-            command = "#!/bin/bash\n"
-            command += "build/ARM/gem5.fast \\\n"
-            command += "    --remote-gdb-port=0 \\\n"
-            command += "    --outdir=m5out/" + folder + " \\\n"
-            command += "    --stats-file=" + p0 + "_" + l2_size[j] + "_stats.txt \\\n"
-            command += "    configs/dramsim2/dramsim2_se.py \\\n"
-            command += "    --cpu-type=detailed \\\n"
-            command += "    --caches \\\n"
-            command += "    --l2cache \\\n"
-            command += "    --l2config=private \\\n"
-            command += "    --l2_size=" + l2_size[j] + "kB \\\n"
-            command += "    --l2_assoc=" + str(l2_assoc) + " \\\n"
-            command += "    --fast-forward=1000000000 \\\n"
-            command += "    --maxinsts=1000000000 \\\n"
-            command += "    --maxtick=2000000000000000 \\\n"
-            command += "    --numpids=1 \\\n"
-            command += "    --p0='" + specintinvoke[i] + "'\\\n"
-            command += "    > " + results_dir + "/" + folder + "/stdout_" + p0 + "_" + l2_size[j] + ".out"
+    for k in range(len(cpus)):
+        for i in range(len(specint)):
+            for j in range(len(l2_size)):
+                p0 = specint[i]
+                l2_assoc = j
+                if l2_assoc == 0:
+                    l2_assoc = 1
+                filename = cpus[k] + "_" + p0 + "_" + l2_size[j]
+                script = open(scriptgen_dir + "/run_" + filename, "w")
+                command = "#!/bin/bash\n"
+                command += "build/ARM/gem5.fast \\\n"
+                command += "    --remote-gdb-port=0 \\\n"
+                command += "    --outdir=m5out/" + folder + " \\\n"
+                command += "    --stats-file=" + filename + "_stats.txt \\\n"
+                command += "    configs/dramsim2/dramsim2_se.py \\\n"
+                command += "    --cpu-type=" + cpus[k] + " \\\n"
+                command += "    --caches \\\n"
+                command += "    --l2cache \\\n"
+                command += "    --l2config=private \\\n"
+                command += "    --l2_size=" + l2_size[j] + "kB \\\n"
+                command += "    --l2_assoc=" + str(l2_assoc) + " \\\n"
+                command += "    --fast-forward=1000000000 \\\n"
+                command += "    --maxinsts=1000000000 \\\n"
+                command += "    --maxtick=2000000000000000 \\\n"
+                command += "    --numpids=1 \\\n"
+                command += "    --p0='" + specintinvoke[i] + "'\\\n"
+                command += "    > " + results_dir + "/" + folder + "/stdout_" + filename + ".out"
 
-            script.write("%s\n" % command)
-            script.close()
+                script.write("%s\n" % command)
+                script.close()
     
-            os.system("qsub -cwd -e stderr/" + folder + "/ -o stdout/" + folder + "/ " + scriptgen_dir + "/run_" + p0 + "_" + l2_size[j])
+                os.system("qsub -cwd -e stderr/" + folder + "/ -o stdout/" + folder + "/ " + scriptgen_dir + "/run_" + filename)
 # Main
 #singleprog()
 miss_curve()
