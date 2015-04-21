@@ -59,7 +59,7 @@ simulate(Tick num_cycles, int numPids)
         new SimLoopExitEvent("simulate() limit reached", 0);
     mainEventQueue.schedule(limit_event, num_cycles);
 
-    Stats::schedStatEvent(true, false, 50000000000, 50000000000);
+    // Stats::schedStatEvent(true, false, 50000000000, 50000000000);
 	
 	while (1) {
         // there should always be at least one event (the SimLoopExitEvent

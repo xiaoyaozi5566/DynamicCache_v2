@@ -114,6 +114,18 @@ CPUProgressEvent::description() const
     return "CPU Progress";
 }
 
+class DumpEvent : public Event
+{
+  public:
+	DumpEvent(): Event(Stat_Event_Pri, AutoDelete)
+	{}
+		
+	virtual void process()
+	{
+		Stats::dump();
+	}
+};
+
 BaseCPU::BaseCPU(Params *p, bool is_checker)
     : MemObject(p), instCnt(0), _cpuId(p->cpu_id),
       _instMasterId(p->system->getMasterId(name() + ".inst")),
@@ -151,6 +163,14 @@ BaseCPU::BaseCPU(Params *p, bool is_checker)
         for (ThreadID tid = 0; tid < numThreads; ++tid) {
             Event *event = new SimLoopExitEvent(cause, 0);
             comInstEventQueue[tid]->schedule(event, p->max_insts_any_thread);
+			int interval = 100000000;
+			int cur_inst = 0;
+			while (cur_inst < p->max_insts_any_thread)
+			{
+				Event *event = new DumpEvent();
+				comInstEventQueue[tid]->schedule(event, cur_inst);
+				cur_inst += interval;
+			}
         }
     }
 
