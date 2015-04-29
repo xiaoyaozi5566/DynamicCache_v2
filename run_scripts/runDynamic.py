@@ -12,20 +12,50 @@ stderr_dir = gem5home + "/stderr"
 
 specint = ['bzip2', 'gcc', 'mcf', 'gobmk', 'hmmer', 'sjeng', 'libquantum', 'h264ref', 'astar', 'xalan']
 
-specintinvoke = [
-    specint_dir + "/bzip2 " + specint_dir + "/input.source 280",
-    specint_dir + "/gcc " + specint_dir + "/200.in -o results/200.s",
-    specint_dir + "/mcf " + specint_dir + "/inp.in",
-    specint_dir + "/gobmk --quiet --mode gtp --gtp-input " + specint_dir + "/13x13.tst",
-    specint_dir + "/hmmer " + specint_dir + "/nph3.hmm " + specint_dir + "/swiss41",
-    specint_dir + "/sjeng " + specint_dir + "/ref.txt",
-    specint_dir + "/libquantum 1397 8",
-    specint_dir + "/h264ref -d " + specint_dir + "/foreman_ref_encoder_baseline.cfg",
-    specint_dir + "/astar " + specint_dir + "/BigLakes2048.cfg",
-    specint_dir + "/Xalan -v " + specint_dir + "/t5.xml " + specint_dir + "/xalanc.xsl"  
-]
+specintinvoke = {
+    'bzip2'     : specint_dir + "/bzip2 " + specint_dir + "/input.source 280",
+    'gcc'       : specint_dir + "/gcc " + specint_dir + "/200.in -o results/200.s",
+    'mcf'       : specint_dir + "/mcf " + specint_dir + "/inp.in",
+    'gobmk'     : specint_dir + "/gobmk --quiet --mode gtp --gtp-input " + specint_dir + "/13x13.tst",
+    'hmmer'     : specint_dir + "/hmmer " + specint_dir + "/nph3.hmm " + specint_dir + "/swiss41",
+    'sjeng'     : specint_dir + "/sjeng " + specint_dir + "/ref.txt",
+    'libquantum': specint_dir + "/libquantum 1397 8",
+    'h264ref'   : specint_dir + "/h264ref -d " + specint_dir + "/foreman_ref_encoder_baseline.cfg",
+    'astar'     : specint_dir + "/astar " + specint_dir + "/BigLakes2048.cfg",
+    'xalan'     : specint_dir + "/Xalan -v " + specint_dir + "/t5.xml " + specint_dir + "/xalanc.xsl"  
+}
 
 cpus = ["timing", "detailed"]
+
+# Workload Characterization
+# Cache insensitive: astar, libquantum
+# Large gain beyond half cache: bzip2 h264ref mcf xalan
+# Small gain beyond half cache: gcc gobmk hmmer sjeng
+
+multiprog = [['astar', 'bzip2'],
+             ['bzip2', 'astar'],
+             ['astar', 'mcf'],
+             ['mcf', 'astar'],
+             ['libquantum', 'h264ref'],
+             ['h264ref', 'libquantum'],
+             ['libquantum', 'xalan'],
+             ['xalan', 'libquantum'],
+             ['astar', 'gobmk'],
+             ['gobmk', 'astar'],
+             ['libquantum', 'hmmer'],
+             ['hmmer', 'libquantum'],
+             ['bzip2', 'gcc'],
+             ['gcc', 'bzip2'],
+             ['h264ref', 'gobmk'],
+             ['gobmk', 'h264ref'],
+             ['mcf', 'hmmer'],
+             ['hmmer', 'mcf'],
+             ['xalan', 'sjeng'],
+             ['sjeng', 'xalan'],
+            ]
+H_mins = [1, 2, 4]
+thresholds = [0.02, 0.05, 0.1, 0.2]
+schemes = ['static', 'dynamic']
 
 if not os.path.exists(scriptgen_dir):
     os.makedirs(scriptgen_dir)
@@ -71,7 +101,7 @@ def singleprog():
         command += "    --maxinsts=1000000000 \\\n"
         command += "    --maxtick=2000000000000000 \\\n"
         command += "    --numpids=1 \\\n"
-        command += "    --p0='" + specintinvoke[i] + "'\\\n"
+        command += "    --p0='" + specintinvoke[p0] + "'\\\n"
         command += "    > " + results_dir + "/" + folder + "/stdout_" + p0 + ".out"
     
         script.write("%s\n" % command)
@@ -99,8 +129,8 @@ def multiprogs():
             command += "    --maxinsts=1000000000 \\\n"
             command += "    --maxtick=2000000000000000 \\\n"
             command += "    --numpids=2 \\\n"
-            command += "    --p0='" + specintinvoke[i] + "'\\\n"
-            command += "    --p1='" + specintinvoke[j] + "'\\\n"
+            command += "    --p0='" + specintinvoke[p0] + "'\\\n"
+            command += "    --p1='" + specintinvoke[p1] + "'\\\n"
             command += "    > " + results_dir + "/" + folder + "/stdout_" + p0 + ".out"
         
             script.write("%s\n" % command)
@@ -136,13 +166,57 @@ def miss_curve():
                 command += "    --maxinsts=1000000000 \\\n"
                 command += "    --maxtick=2000000000000000 \\\n"
                 command += "    --numpids=1 \\\n"
-                command += "    --p0='" + specintinvoke[i] + "'\\\n"
+                command += "    --p0='" + specintinvoke[p0] + "'\\\n"
                 command += "    > " + results_dir + "/" + folder + "/stdout_" + filename + ".out"
 
                 script.write("%s\n" % command)
                 script.close()
     
                 os.system("qsub -cwd -e stderr/" + folder + "/ -o stdout/" + folder + "/ " + scriptgen_dir + "/run_" + filename)
+
+def dynamic_cache():
+    for cpu in cpus:
+        for workload in multiprog:
+            for H_min in H_mins:
+                for threshold in thresholds:
+                    for scheme in schemes:
+                        p0 = workload[0]
+                        p1 = workload[1]
+                        filename = cpu + "_" + scheme + "_" + p0 + "_" + p1 + "_" + str(H_min) + "_" + str(int(threshold*100))
+                        script = open(scriptgen_dir + "/run_" + filename, "w")
+                        command = "#!/bin/bash\n"
+                        command += "build/ARM/gem5.fast \\\n"
+                        command += "    --remote-gdb-port=0 \\\n"
+                        command += "    --outdir=m5out/" + folder + " \\\n"
+                        command += "    --stats-file=" + filename + "_stats.txt \\\n"
+                        command += "    configs/dramsim2/dramsim2_se.py \\\n"
+                        command += "    --cpu-type=" + cpu + " \\\n"
+                        command += "    --caches \\\n"
+                        command += "    --l2cache \\\n"
+                        command += "    --l2config=shared \\\n"
+                        command += "    --l2_size=1024kB \\\n"
+                        command += "    --l2_assoc=8 \\\n"
+                        command += "    --partition_cache \\\n"
+                        if scheme == 'dynamic':
+                            command += "    --dynamic_cache \\\n"
+                        command += "    --fast-forward=1000000000 \\\n"
+                        command += "    --maxinsts=1000000000 \\\n"
+                        command += "    --maxtick=2000000000000000 \\\n"
+                        command += "    --numpids=2 \\\n"
+                        command += "    --H_min=" + str(H_min) + " \\\n"
+                        command += "    --th_inc=" + str(threshold) + " \\\n"
+                        command += "    --th_dec=" + str(threshold) + " \\\n"
+                        command += "    --p0='" + specintinvoke[p0] + "'\\\n"
+                        command += "    --p1='" + specintinvoke[p1] + "'\\\n"
+                        command += "    > " + results_dir + "/" + folder + "/stdout_" + filename + ".out"
+
+                        script.write("%s\n" % command)
+                        script.close()
+                        
+                        os.system("qsub -cwd -e stderr/" + folder + "/ -o stdout/" + folder + "/ " +
+                        scriptgen_dir + "/run_" + filename)
+                        
 # Main
 #singleprog()
-miss_curve()
+#miss_curve()
+dynamic_cache()
