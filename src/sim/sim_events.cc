@@ -95,8 +95,13 @@ isExitFF( const std::string &message ){
 bool
 isExitNormal( const std::string &message ){
 
-    if( message.find("max instruction count")!=string::npos ){
-        if( message.find("cpu0")==string::npos ){
+    if(message=="target called exit()"){
+        if(--mainEventQueue.exit_count>0){
+            return false;
+        }
+    }
+    else if(message.find("max instruction count")){
+        if(--mainEventQueue.exit_count>0){
             return false;
         }
     }
@@ -104,10 +109,9 @@ isExitNormal( const std::string &message ){
 }
 void
 exitSimLoop(const std::string &message, int exit_code, Tick when, Tick repeat)
-{
-
-    
-    int count = ExitCounter::get();
+{    
+    Stats::dump();
+	int count = ExitCounter::get();
     if( count > 0 ){
         cout << message << " @ " << curTick() << endl;
         if( !isExitFF(     message ) ){
@@ -123,6 +127,7 @@ exitSimLoop(const std::string &message, int exit_code, Tick when, Tick repeat)
     ExitCounter::dec();
     Event *event = new SimLoopExitEvent(message, exit_code, repeat);
     mainEventQueue.schedule(event, when);
+	mainEventQueue.exit_count = 2;
 }
 
     CountedDrainEvent::CountedDrainEvent()
