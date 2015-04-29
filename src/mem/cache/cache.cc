@@ -42,6 +42,10 @@
 #include "mem/cache/tags/lru.hh"
 #endif
 
+#if defined(USE_CACHE_DYNALRU)
+#include "mem/cache/tags/dynalru.hh"
+#endif
+
 #if defined(USE_CACHE_FALRU)
 #include "mem/cache/tags/fa_lru.hh"
 #endif
@@ -58,14 +62,22 @@
 
 #if defined(USE_CACHE_FALRU)
 template class Cache<FALRU>;
+template class DynamicCache<FALRU>;
 #endif
 
 #if defined(USE_CACHE_IIC)
 template class Cache<IIC>;
+template class DynamicCache<IIC>;
 #endif
 
 #if defined(USE_CACHE_LRU)
 template class Cache<LRU>;
+template class DynamicCache<LRU>;
+#endif
+
+#if defined(USE_CACHE_DYNALRU)
+template class Cache<DYNALRU>;
+template class DynamicCache<DYNALRU>;
 #endif
 
 #endif //DOXYGEN_SHOULD_SKIP_THIS

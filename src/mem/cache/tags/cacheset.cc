@@ -42,6 +42,17 @@ CacheSet::findBlk(Addr tag) const
     return 0;
 }
 
+unsigned
+CacheSet::findBlkIndex(Addr tag) const
+{
+    for (unsigned i = 0; i < assoc; ++i) {
+        if (blks[i]->tag == tag && blks[i]->isValid()) {
+            return i;
+        }
+    }
+    return 999;
+}
+
 void
 CacheSet::moveToHead(CacheBlk *blk)
 {

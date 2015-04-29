@@ -59,6 +59,8 @@ class CacheSet
      * @return Pointer to the block if found.
      */
     CacheBlk* findBlk(Addr tag) const;
+	
+	unsigned findBlkIndex(Addr tag) const;
 
     /**
      * Move the given block to the head of the list.

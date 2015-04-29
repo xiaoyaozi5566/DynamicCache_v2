@@ -356,11 +356,11 @@ class Cache : public BaseCache
     }
 
     CacheBlk *findBlock(Addr addr) {
-        return tags->findBlock(addr);
+        return tags->findBlock(addr,0);
     }
 
     bool inCache(Addr addr) {
-        return (tags->findBlock(addr) != 0);
+        return (tags->findBlock(addr,0) != 0);
     }
 
     bool inMissQueue(Addr addr) {

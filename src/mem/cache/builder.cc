@@ -39,12 +39,14 @@
 #include "config/the_isa.hh"
 #include "mem/cache/base.hh"
 #include "mem/cache/cache.hh"
+#include "mem/cache/dynamic_cache.hh"
 #include "mem/config/cache.hh"
 #include "params/BaseCache.hh"
 
 // Tag Templates
 #if defined(USE_CACHE_LRU)
 #include "mem/cache/tags/lru.hh"
+#include "mem/cache/tags/dynalru.hh"
 #endif
 
 #if defined(USE_CACHE_FALRU)
@@ -60,8 +62,11 @@ using namespace std;
 
 #define BUILD_CACHE(TAGS, tags)                         \
     do {                                                \
-        Cache<TAGS> *retval =                           \
-            new Cache<TAGS>(this, tags);            \
+        Cache<TAGS> *retval;                           \
+        if( partition_cache )                            \
+			retval = new DynamicCache<TAGS>(this, tags); \
+		else                                           \
+			retval = new Cache<TAGS>(this, tags);            \
         return retval;                                  \
     } while (0)
 
@@ -80,7 +85,11 @@ using namespace std;
 
 #if defined(USE_CACHE_LRU)
 #define BUILD_LRU_CACHE do {                                            \
-        LRU *tags = new LRU(numSets, block_size, assoc, latency);       \
+        LRU *tags;														\
+		if( partition_cache ) 											\
+			tags = new DYNALRU(numSets, block_size, assoc, latency, L_assoc, H_min);       \
+		else														  \
+			tags = new LRU(numSets, block_size, assoc, latency);       \
         BUILD_CACHE(LRU, tags);                                         \
     } while (0)
 #else

@@ -169,6 +169,9 @@ public:
      * @param blk The block to invalidate.
      */
     void invalidateBlk(BlkType *blk);
+    void invalidateBlk(BlkType *blk, uint64_t tid){
+        invalidateBlk( blk );
+    }
 
     /**
      * Access block and update replacement data.  May not succeed, in which case
@@ -181,8 +184,11 @@ public:
      * @param inCache The FALRUBlk::inCache flags.
      * @return Pointer to the cache block.
      */
-    FALRUBlk* accessBlock(Addr addr, int &lat, int context_src, int *inCache = 0);
-
+    FALRUBlk* accessBlock(Addr addr, int &lat, int context_src);
+    FALRUBlk* accessBlock(Addr addr, int &lat, int context_src, uint64_t tid){
+        return accessBlock(addr, lat, context_src);
+    }
+	
     /**
      * Find the block in the cache, do not update the replacement data.
      * @param addr The address to look for.
@@ -190,6 +196,19 @@ public:
      * @return Pointer to the cache block.
      */
     FALRUBlk* findBlock(Addr addr) const;
+    FALRUBlk* findBlock(Addr addr, uint64_t tid) const{
+        return findBlock( addr );
+    }
+	
+	virtual void reset_umon(){return;};
+	virtual unsigned curr_L_assoc(){return 0;};
+	virtual unsigned lookup_umon(int index){return 0;};
+	virtual unsigned lookup_misses() {return 0;};
+	virtual unsigned inc_size(){return 0;};
+	
+	virtual unsigned dec_size(){return 0;};
+	
+	virtual BlkType* get_evictBlk(unsigned tcid, unsigned index){return NULL;};
 
     /**
      * Find a replacement block for the address provided.

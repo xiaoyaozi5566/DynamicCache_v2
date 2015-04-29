@@ -128,6 +128,9 @@ public:
      * @param blk The block to invalidate.
      */
     void invalidateBlk(BlkType *blk);
+    void invalidateBlk(BlkType *blk, uint64_t tid){
+        invalidateBlk( blk );
+    }
 
     /**
      * Access block and update replacement data.  May not succeed, in which case
@@ -139,6 +142,10 @@ public:
      * @return Pointer to the cache block if found.
      */
     BlkType* accessBlock(Addr addr, int &lat, int context_src);
+	virtual BlkType* accessBlock(Addr addr, int &lat, int context_src, uint64_t tid)
+	{
+		return accessBlock(addr, lat, context_src);
+	}
 
     /**
      * Finds the given address in the cache, do not update replacement data.
@@ -148,6 +155,19 @@ public:
      * @return Pointer to the cache block if found.
      */
     BlkType* findBlock(Addr addr) const;
+	virtual BlkType* findBlock(Addr addr, uint64_t tid) const{
+		return findBlock( addr );
+	}
+	
+	virtual void reset_umon(){return;};
+	virtual unsigned curr_L_assoc(){return 0;};
+	virtual unsigned lookup_umon(int index){return 0;};
+	virtual unsigned lookup_misses() {return 0;};
+	virtual unsigned inc_size(){return 0;};
+	
+	virtual unsigned dec_size(){return 0;};
+	
+	virtual BlkType* get_evictBlk(unsigned tcid, unsigned index){return NULL;};
 
     /**
      * Find a block to evict for the address provided.

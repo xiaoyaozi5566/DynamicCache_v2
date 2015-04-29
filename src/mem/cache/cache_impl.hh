@@ -58,6 +58,7 @@
 #include "mem/cache/prefetch/base.hh"
 #include "mem/cache/blk.hh"
 #include "mem/cache/cache.hh"
+#include "mem/cache/dynamic_cache.hh"
 #include "mem/cache/mshr.hh"
 #include "sim/sim_exit.hh"
 
@@ -170,7 +171,7 @@ Cache<TagStore>::satisfyCpuSideRequest(PacketPtr pkt, BlkType *blk,
                     pkt->assertMemInhibit();
                 }
                 // on ReadExReq we give up our copy unconditionally
-                tags->invalidateBlk(blk);
+                tags->invalidateBlk(blk, pkt->threadID);
             } else if (blk->isWritable() && !pending_downgrade
                       && !pkt->sharedAsserted() && !pkt->req->isInstFetch()) {
                 // we can give the requester an exclusive copy (by not
@@ -210,7 +211,7 @@ Cache<TagStore>::satisfyCpuSideRequest(PacketPtr pkt, BlkType *blk,
         // to just ack those as long as we have an exclusive
         // copy at this level.
         assert(pkt->isUpgrade());
-        tags->invalidateBlk(blk);
+        tags->invalidateBlk(blk, pkt->threadID);
     }
 }
 
@@ -278,9 +279,9 @@ Cache<TagStore>::access(PacketPtr pkt, BlkType *&blk,
         if (pkt->req->isClearLL()) {
             tags->clearLocks();
         } else if (pkt->isWrite()) {
-           blk = tags->findBlock(pkt->getAddr());
+           blk = tags->findBlock(pkt->getAddr(), pkt->threadID);
            if (blk != NULL) {
-               tags->invalidateBlk(blk);
+               tags->invalidateBlk(blk, pkt->threadID);
            }
         }
 
@@ -290,7 +291,7 @@ Cache<TagStore>::access(PacketPtr pkt, BlkType *&blk,
     }
 
     int id = pkt->req->hasContextId() ? pkt->req->contextId() : -1;
-    blk = tags->accessBlock(pkt->getAddr(), lat, id);
+    blk = tags->accessBlock(pkt->getAddr(), lat, id, pkt->threadID);
 
     DPRINTF(Cache, "%s%s %x %s\n", pkt->cmdString(),
             pkt->req->isInstFetch() ? " (ifetch)" : "",
@@ -442,9 +443,9 @@ Cache<TagStore>::timingAccess(PacketPtr pkt)
         if (pkt->req->isClearLL()) {
             tags->clearLocks();
         } else if (pkt->isWrite()) {
-            BlkType *blk = tags->findBlock(pkt->getAddr());
+            BlkType *blk = tags->findBlock(pkt->getAddr(), pkt->threadID);
             if (blk != NULL) {
-                tags->invalidateBlk(blk);
+                tags->invalidateBlk(blk, pkt->threadID);
             }
         }
 
@@ -642,9 +643,9 @@ Cache<TagStore>::atomicAccess(PacketPtr pkt)
         // have to invalidate ourselves and any lower caches even if
         // upper cache will be responding
         if (pkt->isInvalidate()) {
-            BlkType *blk = tags->findBlock(pkt->getAddr());
+            BlkType *blk = tags->findBlock(pkt->getAddr(), pkt->threadID);
             if (blk && blk->isValid()) {
-                tags->invalidateBlk(blk);
+                tags->invalidateBlk(blk, pkt->threadID);
                 DPRINTF(Cache, "rcvd mem-inhibited %s on 0x%x: invalidating\n",
                         pkt->cmdString(), pkt->getAddr());
             }
@@ -752,7 +753,7 @@ void
 Cache<TagStore>::functionalAccess(PacketPtr pkt, bool fromCpuSide)
 {
     Addr blk_addr = blockAlign(pkt->getAddr());
-    BlkType *blk = tags->findBlock(pkt->getAddr());
+    BlkType *blk = tags->findBlock(pkt->getAddr(), pkt->threadID);
     MSHR *mshr = mshrQueue.findMatch(blk_addr);
 
     pkt->pushLabel(name());
@@ -839,7 +840,7 @@ Cache<TagStore>::handleResponse(PacketPtr pkt)
 
     // Initial target is used just for stats
     MSHR::Target *initial_tgt = mshr->getTarget();
-    BlkType *blk = tags->findBlock(pkt->getAddr());
+    BlkType *blk = tags->findBlock(pkt->getAddr(), pkt->threadID);
     int stats_cmd_idx = initial_tgt->pkt->cmdToIndex();
     Tick miss_latency = curTick() - initial_tgt->recvTime;
     PacketList writebacks;
@@ -955,7 +956,7 @@ Cache<TagStore>::handleResponse(PacketPtr pkt)
 
     if (blk) {
         if (pkt->isInvalidate() || mshr->hasPostInvalidate()) {
-            tags->invalidateBlk(blk);
+            tags->invalidateBlk(blk, pkt->threadID);
         } else if (mshr->hasPostDowngrade()) {
             blk->status &= ~BlkWritable;
         }
@@ -989,7 +990,7 @@ Cache<TagStore>::handleResponse(PacketPtr pkt)
             allocateWriteBuffer(writebackBlk(blk), time, true);
         }
         blk->status &= ~BlkValid;
-        tags->invalidateBlk(blk);
+        tags->invalidateBlk(blk, pkt->threadID);
     }
 
     delete pkt;
@@ -1259,7 +1260,7 @@ Cache<TagStore>::handleSnoop(PacketPtr pkt, BlkType *blk,
     // Do this last in case it deallocates block data or something
     // like that
     if (invalidate) {
-        tags->invalidateBlk(blk);
+        tags->invalidateBlk(blk, pkt->threadID);
     }
 }
 
@@ -1277,7 +1278,7 @@ Cache<TagStore>::snoopTiming(PacketPtr pkt)
         return;
     }
 
-    BlkType *blk = tags->findBlock(pkt->getAddr());
+    BlkType *blk = tags->findBlock(pkt->getAddr(), pkt->threadID);
 
     Addr blk_addr = blockAlign(pkt->getAddr());
     MSHR *mshr = mshrQueue.findMatch(blk_addr);
@@ -1358,7 +1359,7 @@ Cache<TagStore>::snoopAtomic(PacketPtr pkt)
         return hitLatency;
     }
 
-    BlkType *blk = tags->findBlock(pkt->getAddr());
+    BlkType *blk = tags->findBlock(pkt->getAddr(), pkt->threadID);
     handleSnoop(pkt, blk, false, false, false);
     return hitLatency;
 }
@@ -1429,7 +1430,7 @@ Cache<TagStore>::getNextMSHR()
         PacketPtr pkt = prefetcher->getPacket();
         if (pkt) {
             Addr pf_addr = blockAlign(pkt->getAddr());
-            if (!tags->findBlock(pf_addr) && !mshrQueue.findMatch(pf_addr) &&
+            if (!tags->findBlock(pf_addr, pkt->threadID) && !mshrQueue.findMatch(pf_addr) &&
                                              !writeBuffer.findMatch(pf_addr)) {
                 // Update statistic on number of prefetches issued
                 // (hwpf_mshr_misses)
@@ -1476,10 +1477,10 @@ Cache<TagStore>::getTimingPacket()
         return NULL;
     } else if (mshr->isForwardNoResponse()) {
         // no response expected, just forward packet as it is
-        assert(tags->findBlock(mshr->addr) == NULL);
+        assert(tags->findBlock(mshr->addr, pkt->threadID) == NULL);
         pkt = tgt_pkt;
     } else {
-        BlkType *blk = tags->findBlock(mshr->addr);
+        BlkType *blk = tags->findBlock(mshr->addr, tgt_pkt->threadID );
 
         if (tgt_pkt->cmd == MemCmd::HardPFReq) {
             // It might be possible for a writeback to arrive between
@@ -1723,3 +1724,69 @@ MemSidePort::MemSidePort(const std::string &_name, Cache<TagStore> *_cache,
       _queue(*_cache, *this, _label), cache(_cache)
 {
 }
+
+//-----------------------------------------------------------------------------
+// Dynamic Cache
+//-----------------------------------------------------------------------------
+template<class TagStore>
+DynamicCache<TagStore>::DynamicCache( const Params *p, TagStore *tags )
+	: Cache<TagStore>( p, tags ), adjustEvent(this)
+{
+	printf("create dynamic cache!\n");
+	
+	assoc = p->assoc;
+	
+	interval = p->time_interval;
+	
+	th_inc = p->th_inc;
+	
+	th_dec = p->th_dec;
+	
+	this->schedule(adjustEvent, interval);
+}
+
+template<class TagStore>
+void
+DynamicCache<TagStore>::adjustPartition()
+{
+	printf("Adjust partition @ tick %llu\n", curTick());
+	unsigned L_assoc = this->tags->curr_L_assoc();
+	int total_misses;
+	int Uinc, Udec;
+	
+	total_misses = this->tags->lookup_misses();
+	Uinc = this->tags->lookup_umon(L_assoc);
+	Udec = this->tags->lookup_umon(L_assoc-1);
+	
+	if (Uinc*1.0/total_misses > th_inc) inc_size();
+	else if (Udec*1.0/total_misses < th_dec) dec_size();
+	
+	this->schedule(adjustEvent, curTick()+interval);
+}
+
+template<class TagStore>
+void
+DynamicCache<TagStore>::inc_size()
+{
+	this->tags->inc_size();
+}
+
+template<class TagStore>
+void
+DynamicCache<TagStore>::dec_size()
+{
+	unsigned numSets = this->tags->dec_size();
+	// write back if the block is dirty
+	for(unsigned i = 0; i < numSets; i++){
+		BlkType *tempBlk = this->tags->get_evictBlk(1, i);
+		if (tempBlk->threadID == 0){
+			if(tempBlk->isDirty() && tempBlk->isValid())
+				this->allocateWriteBuffer(this->writebackBlk(tempBlk), curTick(), true); 
+	
+			this->tags->invalidateBlk(tempBlk, 1);
+	
+			tempBlk->threadID = 1;	
+		}	
+	}
+}
+
