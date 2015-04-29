@@ -69,6 +69,16 @@ Options.addSEOptions(parser)
 
 parser.add_option("--fixaddr", action="store_true", default=False,
 		help="fixed the address mapping of each application")
+parser.add_option("--partition_cache", action="store_true")
+parser.add_option("--dynamic_cache", action="store_true")
+parser.add_option("--L_assoc", type="int", default=4,
+        help="associativity for Low partition")
+parser.add_option("--H_min", type="int", default=1,
+        help="minimal # of ways reserved for High")
+parser.add_option("--th_inc", type="float", default=0.01,
+        help="threshold to increase the Low partition")
+parser.add_option("--th_dec", type="float", default=0.01,
+        help="threshold to decrease the Low partition")
 parser.add_option("--p0", type="string", 
         help="workload for processor 0."),
 parser.add_option("--p1", type="string",

@@ -1742,7 +1742,7 @@ DynamicCache<TagStore>::DynamicCache( const Params *p, TagStore *tags )
 	
 	th_dec = p->th_dec;
 	
-	this->schedule(adjustEvent, interval);
+	if(p->dynamic_cache) this->schedule(adjustEvent, interval);
 }
 
 template<class TagStore>

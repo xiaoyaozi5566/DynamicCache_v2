@@ -135,7 +135,13 @@ class L2Shared( L2Config ):
         system.l2 = L2Cache(size = options.l2_size, 
                             latency=self.latencies[options.l2_size],
                             assoc = options.l2_assoc,
-                            block_size=options.cacheline_size)
+                            block_size=options.cacheline_size,
+                            partition_cache=options.partition_cache,
+                            dynamic_cache=options.dynamic_cache,
+                            L_assoc=options.L_assoc,
+                            H_min=options.H_min,
+                            th_inc=options.th_inc,
+                            th_dec=options.th_dec)
 
         system.tol2bus = NoncoherentBus()
         system.l2.cpu_side = system.tol2bus.master
