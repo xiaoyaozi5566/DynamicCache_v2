@@ -62,7 +62,7 @@ class BaseCache(MemObject):
     mem_side = MasterPort("Port on side closer to MEM")
     addr_ranges = VectorParam.AddrRange([AllMemory], "The address range for the CPU-side port")
     system = Param.System(Parent.any, "System we belong to")
-    time_interval  = Param.Int(2500000000, "Time interval to change partition size")
+    time_interval  = Param.Int(5000000, "Time interval to change partition size")
     th_inc  = Param.Float(-0.001, "threshold that indicates Low partition should increase")
     th_dec  = Param.Float(0.001, "threshold that indicates Low partition should decrease")
     dynamic_cache = Param.Bool(False, "Use dynamic cache implementation")
