@@ -71,7 +71,18 @@ LRU::LRU(unsigned _numSets, unsigned _blkSize, unsigned _assoc,
     warmedUp = false;
     /** @todo Make warmup percentage a parameter. */
     warmupBound = numSets * assoc;
+    
+    init_sets();
+}
 
+CacheSet
+LRU::get_set( int setnum, uint64_t tid, Addr addr ){
+    return sets[setnum];
+}
+
+
+void
+LRU::init_sets(){
     sets = new CacheSet[numSets];
     blks = new BlkType[numSets * assoc];
     // allocate data storage in one big chunk
@@ -116,15 +127,16 @@ LRU::~LRU()
 }
 
 LRU::BlkType*
-LRU::accessBlock(Addr addr, int &lat, int master_id)
+LRU::accessBlock(Addr addr, int &lat, int master_id, uint64_t tid)
 {
     Addr tag = extractTag(addr);
     unsigned set = extractSet(addr);
-    BlkType *blk = sets[set].findBlk(tag);
+    // BlkType *blk = sets[set].findBlk(tag);
+    BlkType *blk = get_set(set,tid,addr).findBlk(tag);
     lat = hitLatency;
-    if (blk != NULL) {
+    if (blk != 0 ) {
         // move this block to head of the MRU list
-        sets[set].moveToHead(blk);
+        get_set(set,tid,addr).moveToHead(blk);
         DPRINTF(CacheRepl, "set %x: moving blk %x to MRU\n",
                 set, regenerateBlkAddr(tag, set));
         if (blk->whenReady > curTick()
@@ -132,6 +144,8 @@ LRU::accessBlock(Addr addr, int &lat, int master_id)
             lat = blk->whenReady - curTick();
         }
         blk->refCount += 1;
+		// set the used bit
+		blk->isTouched = 1;
     }
 
     return blk;
@@ -139,20 +153,20 @@ LRU::accessBlock(Addr addr, int &lat, int master_id)
 
 
 LRU::BlkType*
-LRU::findBlock(Addr addr) const
+LRU::findBlock(Addr addr, uint64_t tid)
 {
     Addr tag = extractTag(addr);
     unsigned set = extractSet(addr);
-    BlkType *blk = sets[set].findBlk(tag);
+    BlkType *blk = get_set(set,tid,addr).findBlk(tag);
     return blk;
 }
 
 LRU::BlkType*
-LRU::findVictim(Addr addr, PacketList &writebacks)
+LRU::findVictim(Addr addr, PacketList &writebacks, uint64_t tid)
 {
     unsigned set = extractSet(addr);
     // grab a replacement candidate
-    BlkType *blk = sets[set].blks[assoc-1];
+    BlkType *blk = get_set(set,tid,addr).blks[assoc_of_tc(tid)-1];
 
     if (blk->isValid()) {
         DPRINTF(CacheRepl, "set %x: selecting blk %x for replacement\n",
@@ -162,7 +176,7 @@ LRU::findVictim(Addr addr, PacketList &writebacks)
 }
 
 void
-LRU::insertBlock(Addr addr, BlkType *blk, int master_id)
+LRU::insertBlock(Addr addr, BlkType *blk, int master_id, uint64_t tid)
 {
     if (!blk->isTouched) {
         tagsInUse++;
@@ -190,6 +204,8 @@ LRU::insertBlock(Addr addr, BlkType *blk, int master_id)
 
     // Set tag for new block.  Caller is responsible for setting status.
     blk->tag = extractTag(addr);
+	// update the threadID of the new block
+	blk->threadID = tid;
 
     // deal with what we are bringing in
     assert(master_id < cache->system->maxMasters());
@@ -197,11 +213,11 @@ LRU::insertBlock(Addr addr, BlkType *blk, int master_id)
     blk->srcMasterId = master_id;
 
     unsigned set = extractSet(addr);
-    sets[set].moveToHead(blk);
+    get_set(set,tid,addr).moveToHead(blk);
 }
 
 void
-LRU::invalidateBlk(BlkType *blk)
+LRU::invalidateBlk(BlkType *blk, uint64_t tid)
 {
     if (blk) {
         if (blk->isValid()) {
@@ -210,7 +226,7 @@ LRU::invalidateBlk(BlkType *blk)
             occupancies[blk->srcMasterId]--;
             blk->srcMasterId = Request::invldMasterId;
             unsigned set = blk->set;
-            sets[set].moveToTail(blk);
+            get_set(set,tid,blk->set).moveToTail(blk);
         }
         blk->status = 0;
         blk->isTouched = false;

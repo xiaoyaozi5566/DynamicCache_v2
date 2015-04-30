@@ -217,8 +217,15 @@ public:
      * @return The block to place the replacement in.
      */
     FALRUBlk* findVictim(Addr addr, PacketList & writebacks);
+    FALRUBlk* findVictim(Addr addr, PacketList & writebacks,
+            uint64_t tid){
+        return findVictim( addr, writebacks );
+    }
 
     void insertBlock(Addr addr, BlkType *blk, int context_src);
+    void insertBlock(Addr addr, BlkType *blk, int context_src, uint64_t tid){
+        insertBlock( addr, blk, context_src );
+    }
 
     /**
      * Return the hit latency of this cache.

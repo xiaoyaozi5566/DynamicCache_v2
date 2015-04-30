@@ -53,6 +53,10 @@ class CacheSet;
  */
 class LRU : public BaseTags
 {
+  private:
+    /** The cache sets. */
+    CacheSet *sets;
+
   public:
     /** Typedef the block type used in this tag store. */
     typedef CacheBlk BlkType;
@@ -69,8 +73,6 @@ class LRU : public BaseTags
     /** The hit latency. */
     const unsigned hitLatency;
 
-    /** The cache sets. */
-    CacheSet *sets;
 
     /** The cache blocks. */
     BlkType *blks;
@@ -114,7 +116,6 @@ public:
 
     /**
      * Return the subblock size. In the case of LRU it is always the block
-     * size.
      * @return The block size.
      */
     unsigned
@@ -127,10 +128,10 @@ public:
      * Invalidate the given block.
      * @param blk The block to invalidate.
      */
-    void invalidateBlk(BlkType *blk);
-    void invalidateBlk(BlkType *blk, uint64_t tid){
-        invalidateBlk( blk );
+    void invalidateBlk(BlkType *blk){
+        invalidateBlk( blk, 0 );
     }
+    void invalidateBlk(BlkType *blk, uint64_t tid);
 
     /**
      * Access block and update replacement data.  May not succeed, in which case
@@ -141,11 +142,10 @@ public:
      * @param lat The access latency.
      * @return Pointer to the cache block if found.
      */
-    BlkType* accessBlock(Addr addr, int &lat, int context_src);
-	virtual BlkType* accessBlock(Addr addr, int &lat, int context_src, uint64_t tid)
-	{
-		return accessBlock(addr, lat, context_src);
-	}
+    BlkType* accessBlock(Addr addr, int &lat, int context_src){
+        return accessBlock( addr, lat, context_src, 0 );
+    }
+    virtual BlkType* accessBlock(Addr addr, int &lat, int context_src, uint64_t tid);
 
     /**
      * Finds the given address in the cache, do not update replacement data.
@@ -154,28 +154,21 @@ public:
      * @param asid The address space ID.
      * @return Pointer to the cache block if found.
      */
-    BlkType* findBlock(Addr addr) const;
-	virtual BlkType* findBlock(Addr addr, uint64_t tid) const{
-		return findBlock( addr );
-	}
+    BlkType* findBlock(Addr addr){
+        return findBlock( addr, 0 );
+    }
+    virtual BlkType* findBlock(Addr addr, uint64_t tid);
 	
-	virtual void reset_umon(){return;};
-	virtual unsigned curr_L_assoc(){return 0;};
-	virtual unsigned lookup_umon(int index){return 0;};
-	virtual unsigned lookup_misses() {return 0;};
-	virtual unsigned inc_size(){return 0;};
-	
-	virtual unsigned dec_size(){return 0;};
-	
-	virtual BlkType* get_evictBlk(unsigned tcid, unsigned index){return NULL;};
-
     /**
      * Find a block to evict for the address provided.
      * @param addr The addr to a find a replacement candidate for.
      * @param writebacks List for any writebacks to be performed.
      * @return The candidate block.
      */
-    BlkType* findVictim(Addr addr, PacketList &writebacks);
+    BlkType* findVictim(Addr addr, PacketList &writebacks){
+        return findVictim( addr, writebacks, 0 );
+    }
+    BlkType* findVictim(Addr addr, PacketList &writebacks, uint64_t tid);
 
     /**
      * Insert the new block into the cache.  For LRU this means inserting into
@@ -183,7 +176,32 @@ public:
      * @param addr The address to update.
      * @param blk The block to update.
      */
-     void insertBlock(Addr addr, BlkType *blk, int context_src);
+     void insertBlock(Addr addr, BlkType *blk, int context_src){
+         insertBlock( addr, blk, context_src, 0 );
+     }
+     void insertBlock(Addr addr, BlkType *blk, int context_src, uint64_t tid);
+
+
+     /*
+      * return the set at a particular index with a particular tid. The regular 
+      * LRU cache has only one group of sets. The WPLRU cache will override 
+      * this method and actually use the tid to do partitioning.
+      */
+    virtual CacheSet get_set( int setnum, uint64_t tid, Addr addr );
+
+    virtual int assoc_of_tc( int tcid ){ return assoc; }
+
+    virtual void init_sets();
+	
+	virtual void reset_umon(){return;};
+	virtual unsigned curr_L_assoc(){return 0;};
+	virtual unsigned lookup_umon(int index){return 0;};
+	virtual unsigned lookup_misses(){return 0;}
+	virtual unsigned inc_size(){return 0;};
+	
+	virtual unsigned dec_size(){return 0;};
+	
+	virtual BlkType* get_evictBlk(unsigned tcid, unsigned index){return NULL;};
 
     /**
      * Generate the tag from the given address.

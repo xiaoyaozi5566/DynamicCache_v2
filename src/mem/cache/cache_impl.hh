@@ -317,7 +317,7 @@ Cache<TagStore>::access(PacketPtr pkt, BlkType *&blk,
         assert(blkSize == pkt->getSize());
         if (blk == NULL) {
             // need to do a replacement
-            blk = allocateBlock(pkt->getAddr(), writebacks);
+            blk = allocateBlock(pkt->getAddr(), writebacks, pkt->threadID);
             if (blk == NULL) {
                 // no replaceable block available, give up.
                 // writeback will be forwarded to next level.
@@ -325,7 +325,7 @@ Cache<TagStore>::access(PacketPtr pkt, BlkType *&blk,
                 return false;
             }
             int id = pkt->req->masterId();
-            tags->insertBlock(pkt->getAddr(), blk, id);
+            tags->insertBlock(pkt->getAddr(), blk, id, pkt->threadID);
             blk->status = BlkValid | BlkReadable;
         }
         std::memcpy(blk->data, pkt->getPtr<uint8_t>(), blkSize);
@@ -987,7 +987,7 @@ Cache<TagStore>::handleResponse(PacketPtr pkt)
     // if we used temp block, clear it out
     if (blk == tempBlock) {
         if (blk->isDirty()) {
-            allocateWriteBuffer(writebackBlk(blk), time, true);
+            allocateWriteBuffer(writebackBlk(blk, blk->threadID), time, true);
         }
         blk->status &= ~BlkValid;
         tags->invalidateBlk(blk, pkt->threadID);
@@ -1001,7 +1001,7 @@ Cache<TagStore>::handleResponse(PacketPtr pkt)
 
 template<class TagStore>
 PacketPtr
-Cache<TagStore>::writebackBlk(BlkType *blk)
+Cache<TagStore>::writebackBlk(BlkType *blk, int threadID)
 {
     assert(blk && blk->isValid() && blk->isDirty());
 
@@ -1010,7 +1010,7 @@ Cache<TagStore>::writebackBlk(BlkType *blk)
     Request *writebackReq =
         new Request(tags->regenerateBlkAddr(blk->tag, blk->set), blkSize, 0,
                 Request::wbMasterId);
-    PacketPtr writeback = new Packet(writebackReq, MemCmd::Writeback);
+    PacketPtr writeback = new Packet(writebackReq, MemCmd::Writeback, threadID, threadID, threadID);
     if (blk->isWritable()) {
         writeback->setSupplyExclusive();
     }
@@ -1024,9 +1024,9 @@ Cache<TagStore>::writebackBlk(BlkType *blk)
 
 template<class TagStore>
 typename Cache<TagStore>::BlkType*
-Cache<TagStore>::allocateBlock(Addr addr, PacketList &writebacks)
+Cache<TagStore>::allocateBlock(Addr addr, PacketList &writebacks, uint64_t tid)
 {
-    BlkType *blk = tags->findVictim(addr, writebacks);
+    BlkType *blk = tags->findVictim(addr, writebacks, tid);
 
     if (blk->isValid()) {
         Addr repl_addr = tags->regenerateBlkAddr(blk->tag, blk->set);
@@ -1046,7 +1046,7 @@ Cache<TagStore>::allocateBlock(Addr addr, PacketList &writebacks)
 
             if (blk->isDirty()) {
                 // Save writeback packet for handling by caller
-                writebacks.push_back(writebackBlk(blk));
+                writebacks.push_back(writebackBlk(blk, blk->threadID));
             }
         }
     }
@@ -1074,7 +1074,7 @@ Cache<TagStore>::handleFill(PacketPtr pkt, BlkType *blk,
         // better have read new data...
         assert(pkt->hasData());
         // need to do a replacement
-        blk = allocateBlock(addr, writebacks);
+        blk = allocateBlock(addr, writebacks, pkt->threadID);
         if (blk == NULL) {
             // No replaceable block... just use temporary storage to
             // complete the current request and then get rid of it
@@ -1085,7 +1085,7 @@ Cache<TagStore>::handleFill(PacketPtr pkt, BlkType *blk,
             DPRINTF(Cache, "using temp block for %x\n", addr);
         } else {
             int id = pkt->req->masterId();
-            tags->insertBlock(pkt->getAddr(), blk, id);
+            tags->insertBlock(pkt->getAddr(), blk, id, pkt->threadID);
         }
 
         // starting from scratch with a new block
@@ -1758,8 +1758,11 @@ DynamicCache<TagStore>::adjustPartition()
 	Uinc = this->tags->lookup_umon(L_assoc);
 	Udec = this->tags->lookup_umon(L_assoc-1);
 	
-	if (Uinc*1.0/total_misses > th_inc) inc_size();
-	else if (Udec*1.0/total_misses < th_dec) dec_size();
+	if ( total_misses == 0 ) dec_size();
+	else{
+		if (Uinc*1.0/total_misses > th_inc) inc_size();
+		else if (Udec*1.0/total_misses < th_dec) dec_size();
+	}
 	
 	this->schedule(adjustEvent, curTick()+interval);
 }
@@ -1781,7 +1784,7 @@ DynamicCache<TagStore>::dec_size()
 		BlkType *tempBlk = this->tags->get_evictBlk(1, i);
 		if (tempBlk->threadID == 0){
 			if(tempBlk->isDirty() && tempBlk->isValid())
-				this->allocateWriteBuffer(this->writebackBlk(tempBlk), curTick(), true); 
+				this->allocateWriteBuffer(this->writebackBlk(tempBlk, 0), curTick(), true); 
 	
 			this->tags->invalidateBlk(tempBlk, 1);
 	

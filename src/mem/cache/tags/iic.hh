@@ -456,8 +456,14 @@ class IIC : public BaseTags
      * @return The block to place the replacement in.
      */
     IICTag* findVictim(Addr addr, PacketList &writebacks);
+    IICTag* findVictim(Addr addr, PacketList &writebacks, uint64_t tid){
+        return findVictim( addr, writebacks );
+    }
 
     void insertBlock(Addr addr, BlkType *blk, int context_src);
+    void insertBlock(Addr addr, BlkType *blk, int context_src, uint64_t tid){
+        insertBlock( addr, blk, context_src );
+    }
     /**
      *iterated through all blocks and clear all locks
      *Needed to clear all lock tracking at once
