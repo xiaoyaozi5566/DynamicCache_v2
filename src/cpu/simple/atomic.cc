@@ -272,9 +272,10 @@ AtomicSimpleCPU::readMem(Addr addr, uint8_t * data,
 
         // Now do the access.
         if (fault == NoFault && !req->getFlags().isSet(Request::NO_ACCESS)) {
+            uint64_t tcid = thread[0].getProcessPtr()->__pid;
             Packet pkt = Packet(req,
                                 req->isLLSC() ? MemCmd::LoadLockedReq :
-                                MemCmd::ReadReq);
+                                MemCmd::ReadReq, tcid, tcid, tcid);
             pkt.dataStatic(data);
 
             if (req->isMmappedIpr())
@@ -375,7 +376,8 @@ AtomicSimpleCPU::writeMem(uint8_t *data, unsigned size,
             }
 
             if (do_access && !req->getFlags().isSet(Request::NO_ACCESS)) {
-                Packet pkt = Packet(req, cmd);
+            uint64_t tcid = thread[0].getProcessPtr()->__pid;
+                Packet pkt = Packet(req, cmd, tcid, tcid, tcid);
                 pkt.dataStatic(data);
 
                 if (req->isMmappedIpr()) {
@@ -474,7 +476,9 @@ AtomicSimpleCPU::tick()
                 //if(decoder.needMoreBytes())
                 //{
                     icache_access = true;
-                    Packet ifetch_pkt = Packet(&ifetch_req, MemCmd::ReadReq);
+                    uint64_t tcid = thread[0].getProcessPtr()->__pid;
+                    Packet ifetch_pkt = Packet(&ifetch_req, MemCmd::ReadReq,
+                        tcid, tcid, tcid);
                     ifetch_pkt.dataStatic(&inst);
 
                     if (fastmem && system->isMemAddr(ifetch_pkt.getAddr()))
