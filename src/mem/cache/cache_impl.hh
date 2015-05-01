@@ -1736,7 +1736,7 @@ DynamicCache<TagStore>::DynamicCache( const Params *p, TagStore *tags )
 	
 	assoc = p->assoc;
 	
-	interval = p->time_interval*500;
+	interval = p->time_interval*500.0;
 	
 	th_inc = p->th_inc;
 	
