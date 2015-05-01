@@ -30,4 +30,6 @@ private:
 	float th_inc, th_dec;
 	// Static miss curve
 	unsigned assoc;
+	
+	System *system;
 };

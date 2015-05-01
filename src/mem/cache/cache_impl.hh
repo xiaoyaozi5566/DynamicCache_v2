@@ -1740,6 +1740,8 @@ DynamicCache<TagStore>::DynamicCache( const Params *p, TagStore *tags )
 	
 	th_inc = p->th_inc;
 	
+	system = p->system;
+	
 	th_dec = p->th_dec;
 	
 	if(p->dynamic_cache) this->schedule(adjustEvent, interval);
@@ -1749,19 +1751,22 @@ template<class TagStore>
 void
 DynamicCache<TagStore>::adjustPartition()
 {
-	printf("Adjust partition @ tick %llu\n", curTick());
-	unsigned L_assoc = this->tags->curr_L_assoc();
-	int total_misses;
-	int Uinc, Udec;
+	// only start dynamic partitioning in real simulation
+	if (system->getMemoryMode() == 2){
+		std::cout << "Adjust partition @ tick " << curTick() << std::endl;
+		unsigned L_assoc = this->tags->curr_L_assoc();
+		int total_misses;
+		int Uinc, Udec;
 	
-	total_misses = this->tags->lookup_misses();
-	Uinc = this->tags->lookup_umon(L_assoc);
-	Udec = this->tags->lookup_umon(L_assoc-1);
+		total_misses = this->tags->lookup_misses();
+		Uinc = this->tags->lookup_umon(L_assoc);
+		Udec = this->tags->lookup_umon(L_assoc-1);
 	
-	if ( total_misses == 0 ) dec_size();
-	else{
-		if (Uinc*1.0/total_misses > th_inc) inc_size();
-		else if (Udec*1.0/total_misses < th_dec) dec_size();
+		if ( total_misses == 0 ) dec_size();
+		else{
+			if (Uinc*1.0/total_misses > th_inc) inc_size();
+			else if (Udec*1.0/total_misses < th_dec) dec_size();
+		}
 	}
 	
 	this->schedule(adjustEvent, curTick()+interval);
