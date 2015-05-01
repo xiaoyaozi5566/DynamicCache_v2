@@ -23,7 +23,9 @@ DYNALRU::DYNALRU( unsigned _numSets,
 	// umon counters
 	umon_counters = new unsigned[assoc];
 	miss_counter = 0;
-	reset_umon();
+	for (unsigned i = 0; i < assoc; i++) 
+		umon_counters[i] = 0;
+	
 	init_sets();
 }
 
