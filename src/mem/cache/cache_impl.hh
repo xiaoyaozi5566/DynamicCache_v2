@@ -1769,6 +1769,8 @@ DynamicCache<TagStore>::adjustPartition()
 		}
 	}
 	
+	this->tags->reset_umon();
+	
 	this->schedule(adjustEvent, curTick()+interval);
 }
 
