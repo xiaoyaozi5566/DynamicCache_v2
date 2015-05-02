@@ -49,6 +49,8 @@ PortProxy::blobHelper(Addr addr, uint8_t *p, int size, MemCmd cmd) const
          !gen.done(); gen.next()) {
         req.setPhys(gen.addr(), gen.size(), 0, Request::funcMasterId);
         Packet pkt(&req, cmd);
+		if (addr > 1000000000 ) pkt.threadID = 1;
+		else pkt.threadID = 0;
         pkt.dataStatic(p);
         _port.sendFunctional(&pkt);
         p += gen.size();
