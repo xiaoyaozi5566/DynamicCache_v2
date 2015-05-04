@@ -22,15 +22,16 @@ specintinvoke = {
     'libquantum': specint_dir + "/libquantum 1397 8",
     'h264ref'   : specint_dir + "/h264ref -d " + specint_dir + "/foreman_ref_encoder_baseline.cfg",
     'astar'     : specint_dir + "/astar " + specint_dir + "/BigLakes2048.cfg",
-    'xalan'     : specint_dir + "/Xalan -v " + specint_dir + "/t5.xml " + specint_dir + "/xalanc.xsl"  
+    'xalan'     : specint_dir + "/Xalan -v " + specint_dir + "/t5.xml " + specint_dir + "/xalanc.xsl",
+    'soplex'    : specint_dir + "/soplex -sl -e -m45000 " + specint_dir + "/pds-50.mps"
 }
 
 cpus = ["detailed"]
 
 # Workload Characterization
 # Cache insensitive: astar, libquantum
-# Large gain beyond half cache: bzip2 h264ref mcf xalan
-# Small gain beyond half cache: gcc gobmk hmmer sjeng
+# Large gain beyond half cache: bzip2 mcf xalan soplex
+# Small gain beyond half cache: gcc h264ref gobmk hmmer sjeng
 
 multiprog = [['astar', 'bzip2'],
              ['bzip2', 'astar'],
@@ -53,6 +54,40 @@ multiprog = [['astar', 'bzip2'],
              ['xalan', 'sjeng'],
              ['sjeng', 'xalan'],
             ]
+
+multiprog = [['mcf', 'bzip2'],
+             ['xalan', 'soplex'],
+             ['bzip2', 'xalan'],
+             ['soplex', 'mcf'],
+             ['bzip2', 'mcf'],
+             ['soplex', 'xalan'],
+             ['xalan', 'bzip2'],
+             ['mcf', 'soplex'],
+             
+             ['mcf', 'astar'],
+             ['xalan', 'astar'],
+             ['soplex', 'libquantum'],
+             ['bzip2', 'libquantum'],
+             ['astar', 'mcf'],
+             ['astar', 'xalan'],
+             ['libquantum', 'soplex'],
+             ['libquantum', 'bzip2'],
+                          
+             ['bzip2', 'h264ref'],
+             ['h264ref', 'bzip2'],
+             ['mcf', 'gobmk'],
+             ['hmmer', 'mcf'],
+             ['xalan', 'sjeng'],
+             ['hmmer', 'xalan'],
+             ['soplex', 'h264ref'],
+             ['gobmk', 'soplex'],
+             
+             ['astar', 'libquantum'],
+             ['sjeng', 'gobmk'],
+             ['hmmer', 'sjeng'],
+             ['astar', 'h264ref'],
+            ]
+            
 H_mins = [1, 2, 4]
 thresholds = [0.02, 0.05, 0.1, 0.2]
 schemes = ['static', 'dynamic']
