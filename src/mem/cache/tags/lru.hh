@@ -131,7 +131,7 @@ public:
     void invalidateBlk(BlkType *blk){
         invalidateBlk( blk, 0 );
     }
-    void invalidateBlk(BlkType *blk, uint64_t tid);
+    virtual void invalidateBlk(BlkType *blk, uint64_t tid);
 
     /**
      * Access block and update replacement data.  May not succeed, in which case

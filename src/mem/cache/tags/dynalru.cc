@@ -302,7 +302,7 @@ DYNALRU::invalidateBlk(BlkType *blk, uint64_t tid)
 				umon_set[blk->set].moveToTail(umon_blk);
 			}
 			umon_blk->status = 0;
-			blk->isTouched = false;
+			umon_blk->isTouched = false;
 		}
 	}
 }
