@@ -71,6 +71,7 @@ parser.add_option("--fixaddr", action="store_true", default=False,
 		help="fixed the address mapping of each application")
 parser.add_option("--partition_cache", action="store_true")
 parser.add_option("--dynamic_cache", action="store_true")
+parser.add_option("--util_cache", action="store_true")
 parser.add_option("--L_assoc", type="int", default=4,
         help="associativity for Low partition")
 parser.add_option("--H_min", type="int", default=1,

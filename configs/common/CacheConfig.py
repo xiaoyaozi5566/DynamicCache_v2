@@ -138,6 +138,7 @@ class L2Shared( L2Config ):
                             block_size=options.cacheline_size,
                             partition_cache=options.partition_cache,
                             dynamic_cache=options.dynamic_cache,
+                            util_cache=options.util_cache,
                             L_assoc=options.L_assoc,
                             H_min=options.H_min,
                             th_inc=options.th_inc,
