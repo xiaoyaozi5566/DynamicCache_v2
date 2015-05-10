@@ -1,4 +1,4 @@
-#include "mem/cache/tags/UTILLRU.hh"
+#include "mem/cache/tags/utillru.hh"
 #include "base/intmath.hh"
 #include "debug/CacheRepl.hh"
 #include "mem/cache/tags/cacheset.hh"
