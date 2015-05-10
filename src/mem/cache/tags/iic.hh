@@ -442,6 +442,7 @@ class IIC : public BaseTags
 	virtual void reset_umon(){return;};
 	virtual unsigned curr_L_assoc(){return 0;};
 	virtual unsigned lookup_umon(int index){return 0;};
+	virtual unsigned lookup_umon(int index, uint64_t tid){return 0;};
 	virtual unsigned lookup_misses() {return 0;};
 	virtual unsigned inc_size(){return 0;};
 	

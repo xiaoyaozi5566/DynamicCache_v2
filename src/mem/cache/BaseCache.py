@@ -67,5 +67,6 @@ class BaseCache(MemObject):
     th_dec  = Param.Float(0.001, "threshold that indicates Low partition should decrease")
     dynamic_cache = Param.Bool(False, "Use dynamic cache implementation")
     partition_cache = Param.Bool(False, "Use partitioned cache implementation")
+    util_cache = Param.Bool(False, "Use partitioned cache implementation")
     L_assoc = Param.Int(4, "associativity for Low partition")
     H_min = Param.Int(1, "minimal # of ways reserved for High partition")

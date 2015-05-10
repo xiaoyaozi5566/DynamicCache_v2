@@ -38,3 +38,4 @@
 #define USE_CACHE_FALRU 1
 #define USE_CACHE_IIC 1
 #define USE_CACHE_DYNALRU 1
+#define USE_CACHE_UTIL 1

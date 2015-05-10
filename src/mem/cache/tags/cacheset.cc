@@ -42,6 +42,41 @@ CacheSet::findBlk(Addr tag) const
     return 0;
 }
 
+CacheBlk*
+CacheSet::findVictim(uint64_t tid, unsigned L_assoc) const
+{
+    unsigned counter = 0;
+	uint64_t choice = 0;
+	for (int i = 0; i < assoc; ++i) {
+        if (blks[i]->threadID == 0) counter++;
+    }
+	if (tid == 0)
+	{
+		if (counter < L_assoc) choice = 1;
+		else choice = 0;
+	}
+	else
+	{
+		if (counter > L_assoc) choice = 0;
+		else choice = 1;
+	}
+	
+	CacheBlk *blk = NULL;
+	if (choice == 0)
+	{
+		for (int i = 0; i < assoc; ++i) {
+			if (blks[i]->threadID == 0) blk = blks[i];
+		}
+	}
+	else
+	{
+		for (int i = 0; i < assoc; ++i) {
+			if (blks[i]->threadID == 1) blk = blks[i];
+		}
+	}
+    return blk;
+}
+
 unsigned
 CacheSet::findBlkIndex(Addr tag) const
 {

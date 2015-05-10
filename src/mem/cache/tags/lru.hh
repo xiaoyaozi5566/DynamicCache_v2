@@ -53,7 +53,7 @@ class CacheSet;
  */
 class LRU : public BaseTags
 {
-  private:
+  public:
     /** The cache sets. */
     CacheSet *sets;
 
@@ -168,7 +168,7 @@ public:
     BlkType* findVictim(Addr addr, PacketList &writebacks){
         return findVictim( addr, writebacks, 0 );
     }
-    BlkType* findVictim(Addr addr, PacketList &writebacks, uint64_t tid);
+    virtual BlkType* findVictim(Addr addr, PacketList &writebacks, uint64_t tid);
 
     /**
      * Insert the new block into the cache.  For LRU this means inserting into
@@ -196,6 +196,7 @@ public:
 	virtual void reset_umon(){return;};
 	virtual unsigned curr_L_assoc(){return 0;};
 	virtual unsigned lookup_umon(int index){return 0;};
+	virtual unsigned lookup_umon(int index, uint64_t tid){return 0;};
 	virtual unsigned lookup_misses(){return 0;}
 	virtual unsigned inc_size(){return 0;};
 	

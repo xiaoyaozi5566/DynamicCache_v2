@@ -59,6 +59,7 @@
 #include "mem/cache/blk.hh"
 #include "mem/cache/cache.hh"
 #include "mem/cache/dynamic_cache.hh"
+#include "mem/cache/util_cache.hh"
 #include "mem/cache/mshr.hh"
 #include "sim/sim_exit.hh"
 
@@ -1798,5 +1799,80 @@ DynamicCache<TagStore>::dec_size()
 			tempBlk->threadID = 1;	
 		}	
 	}
+}
+
+//-----------------------------------------------------------------------------
+// Utility Cache
+//-----------------------------------------------------------------------------
+template<class TagStore>
+UtilityCache<TagStore>::UtilityCache( const Params *p, TagStore *tags )
+	: Cache<TagStore>( p, tags ), adjustEvent(this)
+{
+	printf("create utility cache!\n");
+	
+	assoc = p->assoc;
+	
+	interval = p->time_interval*500.0;
+	
+	system = p->system;
+	
+	this->schedule(adjustEvent, interval);
+}
+
+template<class TagStore>
+void
+UtilityCache<TagStore>::adjustPartition()
+{
+	// only start dynamic partitioning in real simulation
+	if (system->getMemoryMode() == 2){
+		std::cout << "Adjust partition @ tick " << curTick() << std::endl;
+		unsigned L_assoc = this->tags->curr_L_assoc();
+
+		int max_util = 0;
+		int optimal_low = 0;
+	
+		for (int i = 1; i < assoc; i++)
+		{
+			int util_counter = 0;
+			for (int j = 1; j < i; j++)
+				util_counter += this->tags->lookup_umon(j, 0);
+			for (int j = 1; j < assoc-i; j++)
+				util_counter += this->tags->lookup_umon(j, 1);
+			if (util_counter > max_util) 
+			{ 
+				max_util = util_counter;
+				optimal_low = i;
+			}
+		}
+		
+		if (L_assoc < optimal_low)
+		{
+			for (int i = 0; i < optimal_low - L_assoc; i++)
+				inc_size();
+		}
+		else
+		{
+			for (int i = 0; i < L_assoc - optimal_low; i++)
+				dec_size();
+		}
+	}
+	
+	this->tags->reset_umon();
+	
+	this->schedule(adjustEvent, curTick()+interval);
+}
+
+template<class TagStore>
+void
+UtilityCache<TagStore>::inc_size()
+{
+	this->tags->inc_size();
+}
+
+template<class TagStore>
+void
+UtilityCache<TagStore>::dec_size()
+{
+	this->tags->dec_size();
 }
 

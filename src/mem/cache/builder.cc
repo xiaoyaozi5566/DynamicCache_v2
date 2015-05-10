@@ -40,6 +40,7 @@
 #include "mem/cache/base.hh"
 #include "mem/cache/cache.hh"
 #include "mem/cache/dynamic_cache.hh"
+#include "mem/cache/util_cache.hh"
 #include "mem/config/cache.hh"
 #include "params/BaseCache.hh"
 
@@ -47,6 +48,7 @@
 #if defined(USE_CACHE_LRU)
 #include "mem/cache/tags/lru.hh"
 #include "mem/cache/tags/dynalru.hh"
+#include "mem/cache/tags/utillru.hh"
 #endif
 
 #if defined(USE_CACHE_FALRU)
@@ -65,7 +67,9 @@ using namespace std;
         Cache<TAGS> *retval;                           \
         if( partition_cache )                            \
 			retval = new DynamicCache<TAGS>(this, tags); \
-		else                                           \
+		else if ( util_cache )                                          \
+			retval = new UtilityCache<TAGS>(this, tags);            \
+		else                                         \
 			retval = new Cache<TAGS>(this, tags);            \
         return retval;                                  \
     } while (0)
@@ -88,6 +92,8 @@ using namespace std;
         LRU *tags;														\
 		if( partition_cache ) 											\
 			tags = new DYNALRU(numSets, block_size, assoc, latency, L_assoc, H_min);       \
+		else if ( util_cache )														  \
+			tags = new UTILLRU(numSets, block_size, assoc, latency, L_assoc);       \
 		else														  \
 			tags = new LRU(numSets, block_size, assoc, latency);       \
         BUILD_CACHE(LRU, tags);                                         \

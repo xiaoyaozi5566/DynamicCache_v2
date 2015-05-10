@@ -60,6 +60,8 @@ class CacheSet
      */
     CacheBlk* findBlk(Addr tag) const;
 	
+	CacheBlk* findVictim(uint64_t tid, unsigned L_assoc) const;
+		
 	unsigned findBlkIndex(Addr tag) const;
 
     /**

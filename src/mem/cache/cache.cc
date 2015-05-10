@@ -54,6 +54,10 @@
 #include "mem/cache/tags/iic.hh"
 #endif
 
+#if defined(USE_CACHE_UTIL)
+#include "mem/cache/tags/utillru.hh"
+#endif
+
 #include "mem/cache/cache_impl.hh"
 
 // Template Instantiations
@@ -63,21 +67,31 @@
 #if defined(USE_CACHE_FALRU)
 template class Cache<FALRU>;
 template class DynamicCache<FALRU>;
+template class UtilityCache<FALRU>;
 #endif
 
 #if defined(USE_CACHE_IIC)
 template class Cache<IIC>;
 template class DynamicCache<IIC>;
+template class UtilityCache<IIC>;
 #endif
 
 #if defined(USE_CACHE_LRU)
 template class Cache<LRU>;
 template class DynamicCache<LRU>;
+template class UtilityCache<LRU>;
 #endif
 
 #if defined(USE_CACHE_DYNALRU)
 template class Cache<DYNALRU>;
 template class DynamicCache<DYNALRU>;
+template class UtilityCache<DYNALRU>;
+#endif
+
+#if defined(USE_CACHE_UTIL)
+template class Cache<UTILLRU>;
+template class DynamicCache<UTILLRU>;
+template class UtilityCache<UTILLRU>;
 #endif
 
 #endif //DOXYGEN_SHOULD_SKIP_THIS

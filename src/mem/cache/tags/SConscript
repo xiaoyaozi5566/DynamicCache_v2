@@ -38,6 +38,7 @@ Source('fa_lru.cc')
 Source('iic.cc')
 Source('lru.cc')
 Source('dynalru.cc')
+Source('utillru.cc')
 Source('cacheset.cc')
 
 SimObject('iic_repl/Repl.py')
