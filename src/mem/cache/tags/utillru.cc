@@ -168,7 +168,7 @@ UTILLRU::accessBlock(Addr addr, int &lat, int master_id, uint64_t tid)
 	unsigned index = umon_sets[tid][set].findBlkIndex(tag);
 	// cache hit on umon tags
 	if (umon_blk != 0) {
-		umon_counters[index]++;
+		umon_counters[tid][index]++;
 		umon_sets[tid][set].moveToHead(umon_blk);
 	}
 	// cache miss on umon tags
