@@ -63,6 +63,10 @@ multiprog = [['mcf', 'bzip2'],
              ['soplex', 'xalan'],
              ['xalan', 'bzip2'],
              ['mcf', 'soplex'],
+             ['bzip2', 'soplex'],
+             ['soplex', 'bzip2'],
+             ['xalan', 'mcf'],
+             ['mcf', 'xalan'],
              
              ['mcf', 'astar'],
              ['xalan', 'astar'],
@@ -72,6 +76,14 @@ multiprog = [['mcf', 'bzip2'],
              ['astar', 'xalan'],
              ['libquantum', 'soplex'],
              ['libquantum', 'bzip2'],
+             ['mcf', 'libquantum'],
+             ['xalan', 'libquantum'],
+             ['soplex', 'astar'],
+             ['bzip2', 'astar'],
+             ['libquantum', 'mcf'],
+             ['libquantum', 'xalan'],
+             ['astar', 'soplex'],
+             ['astar', 'bzip2'],
                           
              ['bzip2', 'h264ref'],
              ['h264ref', 'bzip2'],
@@ -87,9 +99,49 @@ multiprog = [['mcf', 'bzip2'],
              ['hmmer', 'sjeng'],
              ['astar', 'h264ref'],
             ]
-            
+
+multiprog4 = [['mcf', 'bzip2', 'xalan', 'soplex'],
+              ['bzip2', 'xalan', 'soplex', 'mcf'],
+              ['xalan', 'soplex', 'mcf', 'bzip2'],
+              ['soplex', 'mcf', 'bzip2', 'xalan'],
+              ['mcf', 'xalan', 'bzip2', 'soplex'],
+              ['xalan', 'bzip2', 'soplex', 'mcf'],
+              ['bzip2', 'soplex', 'mcf', 'xalan'],
+              ['soplex', 'mcf', 'xalan', 'bzip2'],
+              
+              ['mcf', 'xalan', 'astar', 'astar'],
+              ['astar', 'astar', 'mcf', 'xalan'],
+              ['libquantum', 'libquantum', 'soplex', 'bzip2'],
+              ['soplex', 'bzip2', 'libquantum', 'libquantum'],
+              ['mcf', 'astar', 'soplex', 'libquantum'],
+              ['astar', 'mcf', 'libquantum', 'soplex'],
+              ['astar', 'xalan', 'bzip2', 'libquantum'],
+              ['xalan', 'libquantum', 'astar', 'bzip2'],
+              
+              ['mcf', 'xalan', 'h264ref', 'gobmk'],
+              ['h264ref', 'gobmk', 'mcf', 'xalan'],
+              ['hmmer', 'sjeng', 'soplex', 'bzip2'],
+              ['soplex', 'bzip2', 'hmmer', 'sjeng'],
+              ['mcf', 'h264ref', 'soplex', 'hmmer'],
+              ['h264ref', 'mcf', 'hmmer', 'soplex'],
+              ['sjeng', 'xalan', 'bzip2', 'gobmk'],
+              ['xalan', 'gobmk', 'sjeng', 'bzip2'],
+              
+              ['astar', 'astar', 'h264ref', 'gobmk'],
+              ['h264ref', 'gobmk', 'astar', 'astar'],
+              ['hmmer', 'sjeng', 'libquantum', 'libquantum'],
+              ['libquantum', 'libquantum', 'hmmer', 'sjeng'],
+              ['astar', 'h264ref', 'libquantum', 'hmmer'],
+              ['h264ref', 'libquantum', 'hmmer', 'astar'],
+              ['sjeng', 'astar', 'libquantum', 'gobmk'],
+              ['libquantum', 'gobmk', 'sjeng', 'astar'],
+             ]
+              
 H_mins = [1, 2, 4]
+H_mins = [1]
 thresholds = [0.02, 0.05, 0.1, 0.2]
+thresholds = [0.02, 0.05, 0.1, 0.15, 0.2, 0.25]
+
 schemes = ['static', 'dynamic']
 
 if not os.path.exists(scriptgen_dir):
@@ -134,7 +186,7 @@ def singleprog():
         command += "    --l2cache \\\n"
         command += "    --l2config=private \\\n"
         command += "    --fast-forward=1000000000 \\\n"
-        command += "    --maxinsts=1000000000 \\\n"
+        command += "    --maxinsts=250000000 \\\n"
         command += "    --maxtick=2000000000000000 \\\n"
         command += "    --numpids=1 \\\n"
         command += "    --p0='" + specintinvoke[p0] + "'\\\n"
@@ -163,7 +215,7 @@ def multiprogs():
             command += "    --l2cache \\\n"
             command += "    --l2config=shared \\\n"
             command += "    --fast-forward=1000000000 \\\n"
-            command += "    --maxinsts=1000000000 \\\n"
+            command += "    --maxinsts=250000000 \\\n"
             command += "    --maxtick=2000000000000000 \\\n"
             command += "    --numpids=2 \\\n"
             command += "    --p0='" + specintinvoke[p0] + "'\\\n"
@@ -201,7 +253,7 @@ def miss_curve():
                 command += "    --l2_size=" + l2_size[j] + "kB \\\n"
                 command += "    --l2_assoc=" + str(l2_assoc) + " \\\n"
                 command += "    --fast-forward=1000000000 \\\n"
-                command += "    --maxinsts=1000000000 \\\n"
+                command += "    --maxinsts=250000000 \\\n"
                 command += "    --maxtick=2000000000000000 \\\n"
                 command += "    --numpids=1 \\\n"
                 command += "    --p0='" + specintinvoke[p0] + "'\\\n"
@@ -212,6 +264,40 @@ def miss_curve():
     
                 os.system("qsub -cwd -e stderr/" + folder + "/ -o stdout/" + folder + "/ " + scriptgen_dir + "/run_" + filename)
 
+def nopar_cache():
+    for cpu in cpus:
+        for workload in multiprog:
+            p0 = workload[0]
+            p1 = workload[1]
+            filename = cpu + "_" + "nopar" + "_" + p0 + "_" + p1
+            script = open(scriptgen_dir + "/run_" + filename, "w")
+            command = "#!/bin/bash\n"
+            command += "build/ARM/gem5.fast \\\n"
+            command += "    --remote-gdb-port=0 \\\n"
+            command += "    --outdir=m5out/" + folder + " \\\n"
+            command += "    --stats-file=" + filename + "_stats.txt \\\n"
+            command += "    configs/dramsim2/dramsim2_se.py \\\n"
+            command += "    --fixaddr \\\n"
+            command += "    --cpu-type=" + cpu + " \\\n"
+            command += "    --caches \\\n"
+            command += "    --l2cache \\\n"
+            command += "    --l2config=shared \\\n"
+            command += "    --l2_size=1024kB \\\n"
+            command += "    --l2_assoc=8 \\\n"
+            command += "    --fast-forward=1000000000 \\\n"
+            command += "    --maxinsts=250000000 \\\n"
+            command += "    --maxtick=2000000000000000 \\\n"
+            command += "    --numpids=2 \\\n"
+            command += "    --p0='" + specintinvoke[p0] + "'\\\n"
+            command += "    --p1='" + specintinvoke[p1] + "'\\\n"
+            command += "    > " + results_dir + "/" + folder + "/stdout_" + filename + ".out"
+
+            script.write("%s\n" % command)
+            script.close()
+            
+            os.system("qsub -cwd -e stderr/" + folder + "/ -o stdout/" + folder + "/ " + 
+            scriptgen_dir + "/run_" + filename)
+            
 def dynamic_cache():
     for cpu in cpus:
         for workload in multiprog:
@@ -237,7 +323,7 @@ def dynamic_cache():
                     command += "    --partition_cache \\\n"
                     command += "    --dynamic_cache \\\n"
                     command += "    --fast-forward=1000000000 \\\n"
-                    command += "    --maxinsts=1000000000 \\\n"
+                    command += "    --maxinsts=250000000 \\\n"
                     command += "    --maxtick=2000000000000000 \\\n"
                     command += "    --numpids=2 \\\n"
                     command += "    --H_min=" + str(H_min) + " \\\n"
@@ -275,7 +361,7 @@ def static_cache():
             command += "    --l2_assoc=8 \\\n"
             command += "    --partition_cache \\\n"
             command += "    --fast-forward=1000000000 \\\n"
-            command += "    --maxinsts=1000000000 \\\n"
+            command += "    --maxinsts=250000000 \\\n"
             command += "    --maxtick=2000000000000000 \\\n"
             command += "    --numpids=2 \\\n"
             command += "    --p0='" + specintinvoke[p0] + "'\\\n"
@@ -322,9 +408,136 @@ def utility_cache():
             
             os.system("qsub -cwd -e stderr/" + folder + "/ -o stdout/" + folder + "/ " + 
             scriptgen_dir + "/run_" + filename)
+
+def nopar_cache4():
+    for cpu in cpus:
+        for workload in multiprog4:
+            p0 = workload[0]
+            p1 = workload[1]
+            p2 = workload[2]
+            p3 = workload[3]
+            filename = cpu + "_" + "nopar" + "_" + p0 + "_" + p1 + "_" + p2 + "_" + p3
+            script = open(scriptgen_dir + "/run_" + filename, "w")
+            command = "#!/bin/bash\n"
+            command += "build/ARM/gem5.fast \\\n"
+            command += "    --remote-gdb-port=0 \\\n"
+            command += "    --outdir=m5out/" + folder + " \\\n"
+            command += "    --stats-file=" + filename + "_stats.txt \\\n"
+            command += "    configs/dramsim2/dramsim2_se.py \\\n"
+            command += "    --fixaddr \\\n"
+            command += "    --cpu-type=" + cpu + " \\\n"
+            command += "    --caches \\\n"
+            command += "    --l2cache \\\n"
+            command += "    --l2config=shared \\\n"
+            command += "    --l2_size=2048kB \\\n"
+            command += "    --l2_assoc=16 \\\n"
+            command += "    --fast-forward=1000000000 \\\n"
+            command += "    --maxinsts=250000000 \\\n"
+            command += "    --maxtick=2000000000000000 \\\n"
+            command += "    --numpids=4 \\\n"
+            command += "    --p0='" + specintinvoke[p0] + "'\\\n"
+            command += "    --p1='" + specintinvoke[p1] + "'\\\n"
+            command += "    --p2='" + specintinvoke[p2] + "'\\\n"
+            command += "    --p3='" + specintinvoke[p3] + "'\\\n"
+            command += "    > " + results_dir + "/" + folder + "/stdout_" + filename + ".out"
+
+            script.write("%s\n" % command)
+            script.close()
+            
+            os.system("qsub -cwd -e stderr/" + folder + "/ -o stdout/" + folder + "/ " + 
+            scriptgen_dir + "/run_" + filename)
+            
+def dynamic_cache4():
+    for cpu in cpus:
+        for workload in multiprog4:
+            for H_min in H_mins:
+                for threshold in thresholds:
+                    p0 = workload[0]
+                    p1 = workload[1]
+                    p2 = workload[2]
+                    p3 = workload[3]
+                    filename = cpu + "_" + "dynamic" + "_" + p0 + "_" + p1 + "_" + p2 + "_" + p3
+                    str(H_min) + "_" + str(int(threshold*100))
+                    script = open(scriptgen_dir + "/run_" + filename, "w")
+                    command = "#!/bin/bash\n"
+                    command += "build/ARM/gem5.fast \\\n"
+                    command += "    --remote-gdb-port=0 \\\n"
+                    command += "    --outdir=m5out/" + folder + " \\\n"
+                    command += "    --stats-file=" + filename + "_stats.txt \\\n"
+                    command += "    configs/dramsim2/dramsim2_se.py \\\n"
+                    command += "    --fixaddr \\\n"
+                    command += "    --cpu-type=" + cpu + " \\\n"
+                    command += "    --caches \\\n"
+                    command += "    --l2cache \\\n"
+                    command += "    --l2config=shared \\\n"
+                    command += "    --l2_size=2048kB \\\n"
+                    command += "    --l2_assoc=16 \\\n"
+                    command += "    --lattice_cache \\\n"
+                    command += "    --dynamic_cache \\\n"
+                    command += "    --fast-forward=1000000000 \\\n"
+                    command += "    --maxinsts=250000000 \\\n"
+                    command += "    --maxtick=2000000000000000 \\\n"
+                    command += "    --numpids=4 \\\n"
+                    command += "    --th_inc=" + str(threshold) + " \\\n"
+                    command += "    --th_dec=" + str(threshold) + " \\\n"
+                    command += "    --p0='" + specintinvoke[p0] + "'\\\n"
+                    command += "    --p1='" + specintinvoke[p1] + "'\\\n"
+                    command += "    --p2='" + specintinvoke[p2] + "'\\\n"
+                    command += "    --p3='" + specintinvoke[p3] + "'\\\n"
+                    command += "    > " + results_dir + "/" + folder + "/stdout_" + filename + ".out"
+
+                    script.write("%s\n" % command)
+                    script.close()
+                    
+                    os.system("qsub -cwd -e stderr/" + folder + "/ -o stdout/" + folder + "/ " +
+                    scriptgen_dir + "/run_" + filename)
+
+def static_cache4():
+    for cpu in cpus:
+        for workload in multiprog4:
+            p0 = workload[0]
+            p1 = workload[1]
+            p2 = workload[2]
+            p3 = workload[3]
+            filename = cpu + "_" + "static" + "_" + p0 + "_" + p1 + "_" + p2 + "_" + p3
+            script = open(scriptgen_dir + "/run_" + filename, "w")
+            command = "#!/bin/bash\n"
+            command += "build/ARM/gem5.fast \\\n"
+            command += "    --remote-gdb-port=0 \\\n"
+            command += "    --outdir=m5out/" + folder + " \\\n"
+            command += "    --stats-file=" + filename + "_stats.txt \\\n"
+            command += "    configs/dramsim2/dramsim2_se.py \\\n"
+            command += "    --fixaddr \\\n"
+            command += "    --cpu-type=" + cpu + " \\\n"
+            command += "    --caches \\\n"
+            command += "    --l2cache \\\n"
+            command += "    --l2config=shared \\\n"
+            command += "    --l2_size=2048kB \\\n"
+            command += "    --l2_assoc=16 \\\n"
+            command += "    --lattice_cache \\\n"
+            command += "    --fast-forward=1000000000 \\\n"
+            command += "    --maxinsts=250000000 \\\n"
+            command += "    --maxtick=2000000000000000 \\\n"
+            command += "    --numpids=4 \\\n"
+            command += "    --p0='" + specintinvoke[p0] + "'\\\n"
+            command += "    --p1='" + specintinvoke[p1] + "'\\\n"
+            command += "    --p2='" + specintinvoke[p2] + "'\\\n"
+            command += "    --p3='" + specintinvoke[p3] + "'\\\n"
+            command += "    > " + results_dir + "/" + folder + "/stdout_" + filename + ".out"
+
+            script.write("%s\n" % command)
+            script.close()
+            
+            os.system("qsub -cwd -e stderr/" + folder + "/ -o stdout/" + folder + "/ " +
+            scriptgen_dir + "/run_" + filename) 
+                
 # Main
-#singleprog()
-#miss_curve()
+# singleprog()
+# miss_curve()
+# nopar_cache()
 # static_cache()
 # dynamic_cache()
-utility_cache()
+# utility_cache()
+# nopar_cache4()
+# static_cache4()
+# dynamic_cache4()

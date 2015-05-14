@@ -1884,7 +1884,7 @@ template<class TagStore>
 LatticeCache<TagStore>::LatticeCache( const Params *p, TagStore *tags )
 	: Cache<TagStore>( p, tags ), adjustEvent(this)
 {
-	printf("create utility cache!\n");
+	printf("create lattice cache!\n");
 	
 	assoc = p->assoc;
 	
@@ -1898,7 +1898,7 @@ LatticeCache<TagStore>::LatticeCache( const Params *p, TagStore *tags )
 	
 	system = p->system;
 	
-	this->schedule(adjustEvent, interval);
+	if(p->dynamic_cache) this->schedule(adjustEvent, interval);
 }
 
 template<class TagStore>
@@ -1925,7 +1925,7 @@ LatticeCache<TagStore>::adjustPartition()
 			}
 		}
 		
-		for (unsigned i = 0; i < num_tcs; i++)
+		for (unsigned i = 0; i < num_tcs-1; i++)
 		{
 			// increase partition size
 			if (decision[i] == 1)
@@ -1942,35 +1942,38 @@ LatticeCache<TagStore>::adjustPartition()
 			// decrease partition size
 			else if (decision[i] == 2)
 			{
-				bool decrease = false;
-				unsigned winner = 0;
-				unsigned numSets = 0;
-				for (unsigned j = i+1; j < num_tcs; j++)
+				if (this->tags->assoc_of_tc(i) > 1)
 				{
-					if (decision[j] == 1)
+					bool decrease = false;
+					unsigned winner = 0;
+					unsigned numSets = 0;
+					for (unsigned j = i+1; j < num_tcs; j++)
 					{
-						numSets = this->tags->dec_size(i, j);
-						decision[j] = 0;
-						decrease = true;
-						winner = j;
-						break;
+						if (decision[j] == 1)
+						{
+							numSets = this->tags->dec_size(i, j);
+							decision[j] = 0;
+							decrease = true;
+							winner = j;
+							break;
+						}
 					}
-				}
-				if (!decrease) {
-					winner = num_tcs - 1;
-					numSets = this->tags->dec_size(i, num_tcs-1);
-				}
-				// write back if the block is dirty
-				for(unsigned k = 0; k < numSets; k++){
-					BlkType *tempBlk = this->tags->get_evictBlk(winner, k);
-					if (tempBlk->threadID < winner){
-						if(tempBlk->isDirty() && tempBlk->isValid())
-							this->allocateWriteBuffer(this->writebackBlk(tempBlk, tempBlk->threadID), curTick(), true); 
+					if (!decrease) {
+						winner = num_tcs - 1;
+						numSets = this->tags->dec_size(i, num_tcs-1);
+					}
+					// write back if the block is dirty
+					for(unsigned k = 0; k < numSets; k++){
+						BlkType *tempBlk = this->tags->get_evictBlk(winner, k);
+						if (tempBlk->threadID < winner){
+							if(tempBlk->isDirty() && tempBlk->isValid())
+								this->allocateWriteBuffer(this->writebackBlk(tempBlk, tempBlk->threadID), curTick(), true); 
 	
-						this->tags->invalidateBlk(tempBlk, winner);
+							this->tags->invalidateBlk(tempBlk, winner);
 	
-						tempBlk->threadID = winner;	
-					}	
+							tempBlk->threadID = winner;	
+						}	
+					}
 				}
 			}
 		}
