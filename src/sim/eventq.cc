@@ -432,4 +432,5 @@ EventQueue::EventQueue(const string &n)
     : objName(n), head(NULL)
 {
     exit_count=2;
+	reset_value=2;
 }

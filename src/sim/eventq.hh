@@ -371,7 +371,7 @@ class EventQueue : public Serializable
     const EventQueue &operator=(const EventQueue &);
 
   public:
-    int exit_count;
+    int exit_count, reset_value;
     EventQueue(const std::string &n);
 
     virtual const std::string name() const { return objName; }

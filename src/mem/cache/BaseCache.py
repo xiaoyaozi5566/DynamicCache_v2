@@ -68,5 +68,7 @@ class BaseCache(MemObject):
     dynamic_cache = Param.Bool(False, "Use dynamic cache implementation")
     partition_cache = Param.Bool(False, "Use partitioned cache implementation")
     util_cache = Param.Bool(False, "Use partitioned cache implementation")
+    lattice_cache = Param.Bool(False, "Use partitioned cache implementation")
+    num_tcs = Param.Int(2, "number of security domains")
     L_assoc = Param.Int(4, "associativity for Low partition")
     H_min = Param.Int(1, "minimal # of ways reserved for High partition")

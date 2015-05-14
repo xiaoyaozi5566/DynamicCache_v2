@@ -41,6 +41,7 @@
 #include "mem/cache/cache.hh"
 #include "mem/cache/dynamic_cache.hh"
 #include "mem/cache/util_cache.hh"
+#include "mem/cache/lattice_cache.hh"
 #include "mem/config/cache.hh"
 #include "params/BaseCache.hh"
 
@@ -49,6 +50,7 @@
 #include "mem/cache/tags/lru.hh"
 #include "mem/cache/tags/dynalru.hh"
 #include "mem/cache/tags/utillru.hh"
+#include "mem/cache/tags/lattlru.hh"
 #endif
 
 #if defined(USE_CACHE_FALRU)
@@ -69,6 +71,8 @@ using namespace std;
 			retval = new DynamicCache<TAGS>(this, tags); \
 		else if ( util_cache )                                          \
 			retval = new UtilityCache<TAGS>(this, tags);            \
+		else if ( lattice_cache )                                          \
+			retval = new LatticeCache<TAGS>(this, tags);            \
 		else                                         \
 			retval = new Cache<TAGS>(this, tags);            \
         return retval;                                  \
@@ -94,6 +98,8 @@ using namespace std;
 			tags = new DYNALRU(numSets, block_size, assoc, latency, L_assoc, H_min);       \
 		else if ( util_cache )														  \
 			tags = new UTILLRU(numSets, block_size, assoc, latency, L_assoc);       \
+		else if ( lattice_cache )														  \
+			tags = new LATTLRU(numSets, block_size, assoc, latency, num_tcs);       \
 		else														  \
 			tags = new LRU(numSets, block_size, assoc, latency);       \
         BUILD_CACHE(LRU, tags);                                         \

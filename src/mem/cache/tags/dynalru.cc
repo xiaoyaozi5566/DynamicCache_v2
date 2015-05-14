@@ -46,7 +46,7 @@ unsigned DYNALRU::lookup_umon(int index)
 	return umon_counters[index];
 }
 
-unsigned DYNALRU::lookup_misses()
+unsigned DYNALRU::lookup_misses(uint64_t tid)
 {
 	return miss_counter;
 }

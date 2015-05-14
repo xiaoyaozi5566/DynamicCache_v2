@@ -58,6 +58,10 @@
 #include "mem/cache/tags/utillru.hh"
 #endif
 
+#if defined(USE_CACHE_LATT)
+#include "mem/cache/tags/lattlru.hh"
+#endif
+
 #include "mem/cache/cache_impl.hh"
 
 // Template Instantiations
@@ -80,18 +84,28 @@ template class UtilityCache<IIC>;
 template class Cache<LRU>;
 template class DynamicCache<LRU>;
 template class UtilityCache<LRU>;
+template class LatticeCache<LRU>;
 #endif
 
 #if defined(USE_CACHE_DYNALRU)
 template class Cache<DYNALRU>;
 template class DynamicCache<DYNALRU>;
 template class UtilityCache<DYNALRU>;
+template class LatticeCache<DYNALRU>;
 #endif
 
 #if defined(USE_CACHE_UTIL)
 template class Cache<UTILLRU>;
 template class DynamicCache<UTILLRU>;
 template class UtilityCache<UTILLRU>;
+template class LatticeCache<UTILLRU>;
+#endif
+
+#if defined(USE_CACHE_UTIL)
+template class Cache<LATTLRU>;
+template class DynamicCache<LATTLRU>;
+template class UtilityCache<LATTLRU>;
+template class LatticeCache<LATTLRU>;
 #endif
 
 #endif //DOXYGEN_SHOULD_SKIP_THIS

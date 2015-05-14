@@ -39,6 +39,7 @@ Source('iic.cc')
 Source('lru.cc')
 Source('dynalru.cc')
 Source('utillru.cc')
+Source('lattlru.cc')
 Source('cacheset.cc')
 
 SimObject('iic_repl/Repl.py')

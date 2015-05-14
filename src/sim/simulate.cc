@@ -49,6 +49,7 @@ simulate(Tick num_cycles, int numPids)
 {
     inform("Entering event queue @ %d.  Starting simulation...\n", curTick());
     mainEventQueue.exit_count=numPids;
+	mainEventQueue.reset_value=numPids;
 
     if (num_cycles < MaxTick - curTick())
         num_cycles = curTick() + num_cycles;
