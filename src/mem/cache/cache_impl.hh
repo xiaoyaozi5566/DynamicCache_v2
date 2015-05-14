@@ -60,6 +60,7 @@
 #include "mem/cache/cache.hh"
 #include "mem/cache/dynamic_cache.hh"
 #include "mem/cache/util_cache.hh"
+#include "mem/cache/lattice_cache.hh"
 #include "mem/cache/mshr.hh"
 #include "sim/sim_exit.hh"
 
@@ -1759,7 +1760,7 @@ DynamicCache<TagStore>::adjustPartition()
 		int total_misses;
 		int Uinc, Udec;
 	
-		total_misses = this->tags->lookup_misses();
+		total_misses = this->tags->lookup_misses(0);
 		Uinc = this->tags->lookup_umon(L_assoc);
 		Udec = this->tags->lookup_umon(L_assoc-1);
 	
@@ -1872,6 +1873,124 @@ UtilityCache<TagStore>::inc_size()
 template<class TagStore>
 void
 UtilityCache<TagStore>::dec_size()
+{
+	this->tags->dec_size();
+}
+
+//-----------------------------------------------------------------------------
+// Lattice Cache
+//-----------------------------------------------------------------------------
+template<class TagStore>
+LatticeCache<TagStore>::LatticeCache( const Params *p, TagStore *tags )
+	: Cache<TagStore>( p, tags ), adjustEvent(this)
+{
+	printf("create utility cache!\n");
+	
+	assoc = p->assoc;
+	
+	interval = p->time_interval*500.0;
+	
+	th_inc = p->th_inc;
+	
+	th_dec = p->th_dec;
+	
+	num_tcs = p->num_tcs;
+	
+	system = p->system;
+	
+	this->schedule(adjustEvent, interval);
+}
+
+template<class TagStore>
+void
+LatticeCache<TagStore>::adjustPartition()
+{
+	// only start dynamic partitioning in real simulation
+	if (system->getMemoryMode() == 2){
+		std::cout << "Adjust partition @ tick " << curTick() << std::endl;
+		// 0: remain, 1: increase, 2: decrease
+		unsigned *decision = new unsigned[num_tcs];
+		for (unsigned i = 0; i < num_tcs; i++)
+		{
+			unsigned cur_assoc = this->tags->assoc_of_tc(i);
+			int total_misses = this->tags->lookup_misses(i);
+			int Uinc = this->tags->lookup_umon(cur_assoc);
+			int Udec = this->tags->lookup_umon(cur_assoc-1);
+			
+			if ( total_misses == 0 ) decision[i] = 2;
+			else{
+				if (Uinc*1.0/total_misses > th_inc) decision[i] = 1;
+				else if (Udec*1.0/total_misses < th_dec) decision[i] = 2;
+				else decision[i] = 0;
+			}
+		}
+		
+		for (unsigned i = 0; i < num_tcs; i++)
+		{
+			// increase partition size
+			if (decision[i] == 1)
+			{
+				for (unsigned j = i+1; j < num_tcs; j++)
+				{
+					if (this->tags->assoc_of_tc(j) > 1)
+					{
+						this->tags->inc_size(i, j);
+						break;
+					}
+				}
+			}
+			// decrease partition size
+			else if (decision[i] == 2)
+			{
+				bool decrease = false;
+				unsigned winner = 0;
+				unsigned numSets = 0;
+				for (unsigned j = i+1; j < num_tcs; j++)
+				{
+					if (decision[j] == 1)
+					{
+						numSets = this->tags->dec_size(i, j);
+						decision[j] = 0;
+						decrease = true;
+						winner = j;
+						break;
+					}
+				}
+				if (!decrease) {
+					winner = num_tcs - 1;
+					numSets = this->tags->dec_size(i, num_tcs-1);
+				}
+				// write back if the block is dirty
+				for(unsigned k = 0; k < numSets; k++){
+					BlkType *tempBlk = this->tags->get_evictBlk(winner, k);
+					if (tempBlk->threadID < winner){
+						if(tempBlk->isDirty() && tempBlk->isValid())
+							this->allocateWriteBuffer(this->writebackBlk(tempBlk, tempBlk->threadID), curTick(), true); 
+	
+						this->tags->invalidateBlk(tempBlk, winner);
+	
+						tempBlk->threadID = winner;	
+					}	
+				}
+			}
+		}
+	}
+	
+	this->tags->reset_umon();
+	
+	this->schedule(adjustEvent, curTick()+interval);
+}
+
+template<class TagStore>
+void
+LatticeCache<TagStore>::inc_size()
+{
+	this->tags->inc_size();
+}
+
+template<class TagStore>
+void
+LatticeCache<TagStore>::dec_size()
 {
 	this->tags->dec_size();
 }

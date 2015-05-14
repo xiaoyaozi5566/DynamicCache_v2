@@ -197,10 +197,13 @@ public:
 	virtual unsigned curr_L_assoc(){return 0;};
 	virtual unsigned lookup_umon(int index){return 0;};
 	virtual unsigned lookup_umon(int index, uint64_t tid){return 0;};
-	virtual unsigned lookup_misses(){return 0;}
+	virtual unsigned lookup_misses(uint64_t tid){return 0;}
 	virtual unsigned inc_size(){return 0;};
 	
 	virtual unsigned dec_size(){return 0;};
+	
+	virtual unsigned inc_size(uint64_t tid0, uint64_t tid1) {return 0;};
+	virtual unsigned dec_size(uint64_t tid0, uint64_t tid1) {return 0;};
 	
 	virtual BlkType* get_evictBlk(unsigned tcid, unsigned index){return NULL;};
 

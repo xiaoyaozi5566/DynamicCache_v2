@@ -127,7 +127,7 @@ exitSimLoop(const std::string &message, int exit_code, Tick when, Tick repeat)
     ExitCounter::dec();
     Event *event = new SimLoopExitEvent(message, exit_code, repeat);
     mainEventQueue.schedule(event, when);
-	mainEventQueue.exit_count = 2;
+	mainEventQueue.exit_count = mainEventQueue.reset_value;
 }
 
     CountedDrainEvent::CountedDrainEvent()

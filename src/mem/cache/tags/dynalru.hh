@@ -18,15 +18,18 @@ private:
 	virtual unsigned curr_L_assoc();
 	virtual unsigned lookup_umon(int index);
 	virtual unsigned lookup_umon(int index, uint64_t tid) {return 0;};
-	virtual unsigned lookup_misses();
+	virtual unsigned lookup_misses(uint64_t tid);
 	virtual unsigned inc_size();
 	virtual unsigned dec_size();
+	virtual unsigned inc_size(uint64_t tid0, uint64_t tid1) {return 0;};
+	virtual unsigned dec_size(uint64_t tid0, uint64_t tid1) {return 0;};
 	virtual BlkType* get_evictBlk(unsigned tcid, unsigned index);
 	
 	virtual BlkType* accessBlock(Addr addr, int &lat, int master_id, uint64_t tid);
 
 	virtual BlkType* findBlock(Addr addr, uint64_t tid);
 	virtual void invalidateBlk(BlkType *blk, uint64_t tid);
+    virtual int assoc_of_tc( int tcid );
 	
 	protected:
     CacheSet **sets;
@@ -38,5 +41,4 @@ private:
     virtual CacheSet get_set( int setnum, uint64_t tid, Addr addr );
     // virtual void cleanupRefs();
 
-    virtual int assoc_of_tc( int tcid );
 };
