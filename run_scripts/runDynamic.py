@@ -456,8 +456,7 @@ def dynamic_cache4():
                     p1 = workload[1]
                     p2 = workload[2]
                     p3 = workload[3]
-                    filename = cpu + "_" + "dynamic" + "_" + p0 + "_" + p1 + "_" + p2 + "_" + p3 +
-                    str(H_min) + "_" + str(int(threshold*100))
+                    filename = cpu + "_" + "dynamic" + "_" + p0 + "_" + p1 + "_" + p2 + "_" + p3 + "_" + str(H_min) + "_" + str(int(threshold*100))
                     script = open(scriptgen_dir + "/run_" + filename, "w")
                     command = "#!/bin/bash\n"
                     command += "build/ARM/gem5.fast \\\n"
