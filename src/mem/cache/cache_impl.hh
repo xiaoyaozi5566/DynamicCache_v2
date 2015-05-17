@@ -1914,8 +1914,8 @@ LatticeCache<TagStore>::adjustPartition()
 		{
 			unsigned cur_assoc = this->tags->assoc_of_tc(i);
 			int total_misses = this->tags->lookup_misses(i);
-			int Uinc = this->tags->lookup_umon(cur_assoc);
-			int Udec = this->tags->lookup_umon(cur_assoc-1);
+			int Uinc = this->tags->lookup_umon(cur_assoc, i);
+			int Udec = this->tags->lookup_umon(cur_assoc-1, i);
 			
 			if ( total_misses == 0 ) decision[i] = 2;
 			else{
