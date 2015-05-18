@@ -215,11 +215,12 @@ LATTLRU::accessBlock(Addr addr, int &lat, int master_id, uint64_t tid)
     // BlkType *blk = sets[set].findBlk(tag);
     BlkType *blk;
 	bool inOwn = false;
+	unsigned i = 0;
 	blk = get_set(set,tid,addr).findBlk(tag);
 	if (blk != 0) inOwn = true;
 	else
 	{
-		for (unsigned i = 0; i<num_tcs; i++)
+		for (i = 0; i<num_tcs; i++)
 		{
 			blk = get_set(set,i,addr).findBlk(tag);
 			if (blk != 0) break;
@@ -227,15 +228,6 @@ LATTLRU::accessBlock(Addr addr, int &lat, int master_id, uint64_t tid)
 	}
     lat = hitLatency;
     if (blk != 0 ) {
-        // move this block to head of the MRU list
-        if (inOwn) get_set(set,tid,addr).moveToHead(blk);
-		else {
-			BlkType *tmpBlk;
-			tmpBlk = blk;
-			blk = get_set(set,tid,addr).blks[per_assoc[tid]-1];
-			get_set(set,tid,addr).blks[per_assoc[tid]-1] = tmpBlk;
-			get_set(set,tid,addr).moveToHead(tmpBlk);
-		}
         DPRINTF(CacheRepl, "set %x: moving blk %x to MRU\n",
                 set, regenerateBlkAddr(tag, set));
         if (blk->whenReady > curTick()
@@ -245,6 +237,17 @@ LATTLRU::accessBlock(Addr addr, int &lat, int master_id, uint64_t tid)
         blk->refCount += 1;
 		// set the used bit
 		blk->isTouched = 1;
+        // move this block to head of the MRU list
+        if (inOwn) get_set(set,tid,addr).moveToHead(blk);
+		// else {
+		// 	BlkType *tmpBlk;
+		// 	tmpBlk = blk;
+		// 	blk = get_set(set,tid,addr).blks[per_assoc[tid]-1];
+		// 	get_set(set,tid,addr).blks[per_assoc[tid]-1] = tmpBlk;
+		// 	get_set(set,tid,addr).moveToHead(tmpBlk);
+		// 	unsigned index = get_set(set,i,addr).findBlkIndex(tag);
+		// 	get_set(set,i,addr).blks[index] = blk;
+		// }
     }
 	else
 		miss_counter[tid]++;
