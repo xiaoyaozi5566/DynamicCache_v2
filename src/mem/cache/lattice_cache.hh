@@ -32,6 +32,8 @@ private:
 	unsigned assoc;
 	// number of security domains
 	unsigned num_tcs;
+	// number of reserved ways
+	unsigned H_min;
 	
 	System *system;
 };

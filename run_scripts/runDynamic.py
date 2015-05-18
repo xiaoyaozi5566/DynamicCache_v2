@@ -529,7 +529,90 @@ def static_cache4():
             
             os.system("qsub -cwd -e stderr/" + folder + "/ -o stdout/" + folder + "/ " +
             scriptgen_dir + "/run_" + filename) 
-                
+
+def baseline_QoS():
+    for cpu in cpus:
+        for workload in multiprog4:
+            p0 = workload[0]
+            p1 = workload[1]
+            p2 = workload[2]
+            p3 = workload[3]
+            filename = cpu + "_" + "baselineQoS" + "_" + p0 + "_" + p1 + "_" + p2 + "_" + p3
+            script = open(scriptgen_dir + "/run_" + filename, "w")
+            command = "#!/bin/bash\n"
+            command += "build/ARM/gem5.fast \\\n"
+            command += "    --remote-gdb-port=0 \\\n"
+            command += "    --outdir=m5out/" + folder + " \\\n"
+            command += "    --stats-file=" + filename + "_stats.txt \\\n"
+            command += "    configs/dramsim2/dramsim2_se.py \\\n"
+            command += "    --fixaddr \\\n"
+            command += "    --cpu-type=" + cpu + " \\\n"
+            command += "    --caches \\\n"
+            command += "    --l2cache \\\n"
+            command += "    --l2config=shared \\\n"
+            command += "    --l2_size=1024kB \\\n"
+            command += "    --l2_assoc=8 \\\n"
+            command += "    --lattice_cache \\\n"
+            command += "    --fast-forward=1000000000 \\\n"
+            command += "    --maxinsts=250000000 \\\n"
+            command += "    --maxtick=2000000000000000 \\\n"
+            command += "    --numpids=4 \\\n"
+            command += "    --p0='" + specintinvoke[p0] + "'\\\n"
+            command += "    --p1='" + specintinvoke[p1] + "'\\\n"
+            command += "    --p2='" + specintinvoke[p2] + "'\\\n"
+            command += "    --p3='" + specintinvoke[p3] + "'\\\n"
+            command += "    > " + results_dir + "/" + folder + "/stdout_" + filename + ".out"
+
+            script.write("%s\n" % command)
+            script.close()
+            
+            os.system("qsub -cwd -e stderr/" + folder + "/ -o stdout/" + folder + "/ " +
+            scriptgen_dir + "/run_" + filename) 
+                            
+def dynamic_QoS():
+    for cpu in cpus:
+        for workload in multiprog4:
+            for H_min in H_mins:
+                for threshold in thresholds:
+                    p0 = workload[0]
+                    p1 = workload[1]
+                    p2 = workload[2]
+                    p3 = workload[3]
+                    filename = cpu + "_" + "dynamicQoS" + "_" + p0 + "_" + p1 + "_" + p2 + "_" + p3 + "_2_" + str(int(threshold*100))
+                    script = open(scriptgen_dir + "/run_" + filename, "w")
+                    command = "#!/bin/bash\n"
+                    command += "build/ARM/gem5.fast \\\n"
+                    command += "    --remote-gdb-port=0 \\\n"
+                    command += "    --outdir=m5out/" + folder + " \\\n"
+                    command += "    --stats-file=" + filename + "_stats.txt \\\n"
+                    command += "    configs/dramsim2/dramsim2_se.py \\\n"
+                    command += "    --fixaddr \\\n"
+                    command += "    --cpu-type=" + cpu + " \\\n"
+                    command += "    --caches \\\n"
+                    command += "    --l2cache \\\n"
+                    command += "    --l2config=shared \\\n"
+                    command += "    --l2_size=2048kB \\\n"
+                    command += "    --l2_assoc=16 \\\n"
+                    command += "    --lattice_cache \\\n"
+                    command += "    --dynamic_cache \\\n"
+                    command += "    --fast-forward=1000000000 \\\n"
+                    command += "    --maxinsts=250000000 \\\n"
+                    command += "    --maxtick=2000000000000000 \\\n"
+                    command += "    --numpids=4 \\\n"
+                    command += "    --H_min=2 \\\n"
+                    command += "    --th_inc=" + str(threshold) + " \\\n"
+                    command += "    --th_dec=" + str(threshold) + " \\\n"
+                    command += "    --p0='" + specintinvoke[p0] + "'\\\n"
+                    command += "    --p1='" + specintinvoke[p1] + "'\\\n"
+                    command += "    --p2='" + specintinvoke[p2] + "'\\\n"
+                    command += "    --p3='" + specintinvoke[p3] + "'\\\n"
+                    command += "    > " + results_dir + "/" + folder + "/stdout_" + filename + ".out"
+
+                    script.write("%s\n" % command)
+                    script.close()
+                    
+                    os.system("qsub -cwd -e stderr/" + folder + "/ -o stdout/" + folder + "/ " +
+                    scriptgen_dir + "/run_" + filename)
 # Main
 # singleprog()
 # miss_curve()
@@ -540,3 +623,5 @@ def static_cache4():
 # nopar_cache4()
 # static_cache4()
 # dynamic_cache4()
+# baseline_QoS()
+# dynamic_QoS()

@@ -1896,6 +1896,8 @@ LatticeCache<TagStore>::LatticeCache( const Params *p, TagStore *tags )
 	
 	num_tcs = p->num_tcs;
 	
+	H_min = p->H_min;
+	
 	system = p->system;
 	
 	if(p->dynamic_cache) this->schedule(adjustEvent, interval);
@@ -1932,7 +1934,7 @@ LatticeCache<TagStore>::adjustPartition()
 			{
 				for (unsigned j = i+1; j < num_tcs; j++)
 				{
-					if (this->tags->assoc_of_tc(j) > 1)
+					if (this->tags->assoc_of_tc(j) > H_min)
 					{
 						this->tags->inc_size(i, j);
 						break;
@@ -1942,7 +1944,7 @@ LatticeCache<TagStore>::adjustPartition()
 			// decrease partition size
 			else if (decision[i] == 2)
 			{
-				if (this->tags->assoc_of_tc(i) > 1)
+				if (this->tags->assoc_of_tc(i) > H_min)
 				{
 					bool decrease = false;
 					unsigned winner = 0;
