@@ -539,6 +539,8 @@ class Packet : public Printable
             size = req->getSize();
             flags.set(VALID_SIZE);
         }
+        printf("wrong packet constructor called!\n");
+        assert(false);
     }
     
     /**
@@ -579,6 +581,8 @@ class Packet : public Printable
         }
         size = _blkSize;
         flags.set(VALID_SIZE);
+        printf("wrong packet constructor called!\n");
+        assert(false);
     }
     
     /**
