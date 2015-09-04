@@ -2002,7 +2002,7 @@ LatticeCache<TagStore>::dec_size()
 }
 
 //-----------------------------------------------------------------------------
-// Diamond
+// Diamond Cache
 //-----------------------------------------------------------------------------
 template<class TagStore>
 DiamondCache<TagStore>::DiamondCache( const Params *p, TagStore *tags )
