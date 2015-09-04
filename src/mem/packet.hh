@@ -64,6 +64,8 @@
 #include "base/types.hh"
 #include "mem/request.hh"
 #include "sim/core.hh"
+#include "stdio.h"
+#include "stdlib.h"
 
 class Packet;
 typedef Packet *PacketPtr;
