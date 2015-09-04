@@ -540,7 +540,7 @@ class Packet : public Printable
             flags.set(VALID_SIZE);
         }
         printf("wrong packet constructor called!\n");
-        assert(false);
+        exit(1);
     }
     
     /**
@@ -582,7 +582,7 @@ class Packet : public Printable
         size = _blkSize;
         flags.set(VALID_SIZE);
         printf("wrong packet constructor called!\n");
-        assert(false);
+        exit(1);
     }
     
     /**
