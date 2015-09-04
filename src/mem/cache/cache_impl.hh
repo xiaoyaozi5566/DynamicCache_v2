@@ -61,6 +61,7 @@
 #include "mem/cache/dynamic_cache.hh"
 #include "mem/cache/util_cache.hh"
 #include "mem/cache/lattice_cache.hh"
+#include "mem/cache/diamond_cache.hh"
 #include "mem/cache/mshr.hh"
 #include "sim/sim_exit.hh"
 
@@ -1996,6 +1997,108 @@ LatticeCache<TagStore>::inc_size()
 template<class TagStore>
 void
 LatticeCache<TagStore>::dec_size()
+{
+	this->tags->dec_size();
+}
+
+//-----------------------------------------------------------------------------
+// Diamond
+//-----------------------------------------------------------------------------
+template<class TagStore>
+DiamondCache<TagStore>::DiamondCache( const Params *p, TagStore *tags )
+	: Cache<TagStore>( p, tags ), adjustEvent(this)
+{
+	printf("create diamond cache!\n");
+	
+	assoc = p->assoc;
+	
+	interval = p->time_interval*500.0;
+	
+	th_inc = p->th_inc;
+	
+	th_dec = p->th_dec;
+	
+	num_tcs = p->num_tcs;
+	
+	H_min = p->H_min;
+	
+	system = p->system;
+	
+	if(p->dynamic_cache) this->schedule(adjustEvent, interval);
+}
+
+template<class TagStore>
+void
+DiamondCache<TagStore>::adjustPartition()
+{
+	// only start dynamic partitioning in real simulation
+	if (system->getMemoryMode() == 2){
+		std::cout << "Adjust partition @ tick " << curTick() << std::endl;
+		// 0: remain, 1: increase, 2: decrease
+		unsigned decision;
+        unsigned last_inc = 0;
+        unsigned last_dec = 0;
+        unsigned numSets = 0;
+		unsigned cur_assoc = this->tags->assoc_of_tc(0);
+		int total_misses = this->tags->lookup_misses(0);
+		int Uinc = this->tags->lookup_umon(cur_assoc, 0);
+		int Udec = this->tags->lookup_umon(cur_assoc-1, 0);
+        
+		if ( total_misses == 0 ) decision = 2;
+		else{
+			if (Uinc*1.0/total_misses > th_inc) decision = 1;
+			else if (Udec*1.0/total_misses < th_dec) decision = 2;
+			else decision = 0;
+		}
+        
+        // increase partition size
+        if (decision == 1)
+        {
+            if (this->tags->assoc_of_tc(last_inc) > H_min)
+            {
+                this->tags->inc_size(0, last_inc);
+            }
+            last_inc = (last_inc + 1) % (num_tcs - 1);
+        }
+        // decrease partition size
+		else if (decision == 2)
+        {
+            if (this->tags->assoc_of_tc(0) > H_min)
+            {
+                numSets = this->tags->dec_size(0, last_dec);
+            
+    			// write back if the block is dirty
+    			for(unsigned k = 0; k < numSets; k++){
+    				BlkType *tempBlk = this->tags->get_evictBlk(last_dec, k);
+    				if (tempBlk->threadID != last_dec){
+    					if(tempBlk->isDirty() && tempBlk->isValid())
+    						this->allocateWriteBuffer(this->writebackBlk(tempBlk, tempBlk->threadID), curTick(), true); 
+
+    					this->tags->invalidateBlk(tempBlk, last_dec);
+
+    					tempBlk->threadID = last_dec;	
+    				}	
+    			}
+            }
+            last_dec = (last_dec + 1) % (num_tcs - 1);
+        }
+    }
+	
+	this->tags->reset_umon();
+	
+	this->schedule(adjustEvent, curTick()+interval);
+}
+
+template<class TagStore>
+void
+DiamondCache<TagStore>::inc_size()
+{
+	this->tags->inc_size();
+}
+
+template<class TagStore>
+void
+DiamondCache<TagStore>::dec_size()
 {
 	this->tags->dec_size();
 }

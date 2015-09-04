@@ -40,3 +40,4 @@
 #define USE_CACHE_DYNALRU 1
 #define USE_CACHE_UTIL 1
 #define USE_CACHE_LATT 1
+#define USE_CACHE_DIA 1

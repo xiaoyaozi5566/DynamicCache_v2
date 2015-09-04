@@ -62,6 +62,10 @@
 #include "mem/cache/tags/lattlru.hh"
 #endif
 
+#if defined(USE_CACHE_DIA)
+#include "mem/cache/tags/dialru.hh"
+#endif
+
 #include "mem/cache/cache_impl.hh"
 
 // Template Instantiations
@@ -85,6 +89,7 @@ template class Cache<LRU>;
 template class DynamicCache<LRU>;
 template class UtilityCache<LRU>;
 template class LatticeCache<LRU>;
+template class DiamondCache<LRU>;
 #endif
 
 #if defined(USE_CACHE_DYNALRU)
@@ -92,6 +97,7 @@ template class Cache<DYNALRU>;
 template class DynamicCache<DYNALRU>;
 template class UtilityCache<DYNALRU>;
 template class LatticeCache<DYNALRU>;
+template class DiamondCache<DYNALRU>;
 #endif
 
 #if defined(USE_CACHE_UTIL)
@@ -99,13 +105,23 @@ template class Cache<UTILLRU>;
 template class DynamicCache<UTILLRU>;
 template class UtilityCache<UTILLRU>;
 template class LatticeCache<UTILLRU>;
+template class DiamondCache<UTILLRU>;
 #endif
 
-#if defined(USE_CACHE_UTIL)
+#if defined(USE_CACHE_LATT)
 template class Cache<LATTLRU>;
 template class DynamicCache<LATTLRU>;
 template class UtilityCache<LATTLRU>;
 template class LatticeCache<LATTLRU>;
+template class DiamondCache<LATTLRU>;
+#endif
+
+#if defined(USE_CACHE_LATT)
+template class Cache<DIALRU>;
+template class DynamicCache<DIALRU>;
+template class UtilityCache<DIALRU>;
+template class LatticeCache<DIALRU>;
+template class DiamondCache<DIALRU>;
 #endif
 
 #endif //DOXYGEN_SHOULD_SKIP_THIS
