@@ -1898,6 +1898,9 @@ LatticeCache<TagStore>::LatticeCache( const Params *p, TagStore *tags )
 	num_tcs = p->num_tcs;
 	
 	H_min = p->H_min;
+    
+    for (unsigned i = 0; i < 4; i++)
+        phase_combinations[i] = 0;
 	
 	system = p->system;
 	
@@ -1927,6 +1930,46 @@ LatticeCache<TagStore>::adjustPartition()
 				else decision[i] = 0;
 			}
 		}
+        
+        if (num_tcs == 2)
+        {
+            int total_misses_L = this->tags->lookup_misses(0);
+            int total_misses_H = this->tags->lookup_misses(1);
+            int total_hits_L = 0;
+            int total_hits_H = 0;
+            // 0 means cache insensitive, 1 means cache sensitive
+            int L_phase, H_phase;
+            for (unsigned i = 0; i < assoc; i++)
+            {
+                total_hits_L += this->tags->lookup_umon(i, 0);
+                total_hits_H += this->tags->lookup_umon(i, 1);
+            }
+            printf("total_misses_L %d, total_hits_L %d\n", total_misses_L, total_hits_L);
+            printf("total_misses_H %d, total_hits_H %d\n", total_misses_H, total_hits_H);
+            
+            if (total_misses_L == 0) L_phase = 0;
+            else{
+                if (total_hits_L*1.0/total_misses_L < 0.5) L_phase = 0;
+                else L_phase = 1;
+            }
+            if (total_misses_H == 0) H_phase = 0;
+            else{
+                if (total_hits_H*1.0/total_misses_H < 0.5) H_phase = 0;
+                else H_phase = 1;
+            }
+            if (L_phase == 0)
+            {
+                if (H_phase == 0) phase_combinations[0] += 1;
+                else phase_combinations[1] += 1;
+            }
+            else
+            {
+                if (H_phase == 0) phase_combinations[2] += 1;
+                else phase_combinations[3] += 1;
+            }
+            printf("number of different phase combinations: %d, %d, %d, %d\n", phase_combinations[0], 
+            phase_combinations[1], phase_combinations[2], phase_combinations[3]);
+        }
 		
 		for (unsigned i = 0; i < num_tcs-1; i++)
 		{
@@ -1966,17 +2009,22 @@ LatticeCache<TagStore>::adjustPartition()
 						numSets = this->tags->dec_size(i, num_tcs-1);
 					}
 					// write back if the block is dirty
+                    int num_dirtyblk = 0;
 					for(unsigned k = 0; k < numSets; k++){
 						BlkType *tempBlk = this->tags->get_evictBlk(winner, k);
 						if (tempBlk->threadID < winner){
 							if(tempBlk->isDirty() && tempBlk->isValid())
-								this->allocateWriteBuffer(this->writebackBlk(tempBlk, tempBlk->threadID), curTick(), true); 
+							{
+                                this->allocateWriteBuffer(this->writebackBlk(tempBlk, tempBlk->threadID), curTick(), true);
+                                num_dirtyblk++;
+                            } 
 	
 							this->tags->invalidateBlk(tempBlk, winner);
 	
 							tempBlk->threadID = winner;	
 						}	
 					}
+                    if (num_tcs == 2) printf("number of dirty blocks is %d\n", num_dirtyblk);
 				}
 			}
 		}
@@ -2021,6 +2069,9 @@ DiamondCache<TagStore>::DiamondCache( const Params *p, TagStore *tags )
 	num_tcs = p->num_tcs;
 	
 	H_min = p->H_min;
+    
+    last_inc = 0;
+    last_dec = 0;
 	
 	system = p->system;
 	
@@ -2036,8 +2087,6 @@ DiamondCache<TagStore>::adjustPartition()
 		std::cout << "Adjust partition @ tick " << curTick() << std::endl;
 		// 0: remain, 1: increase, 2: decrease
 		unsigned decision;
-        unsigned last_inc = 0;
-        unsigned last_dec = 0;
         unsigned numSets = 0;
 		unsigned cur_assoc = this->tags->assoc_of_tc(0);
 		int total_misses = this->tags->lookup_misses(0);
@@ -2054,9 +2103,9 @@ DiamondCache<TagStore>::adjustPartition()
         // increase partition size
         if (decision == 1)
         {
-            if (this->tags->assoc_of_tc(last_inc) > H_min)
+            if (this->tags->assoc_of_tc(last_inc + 1) > H_min)
             {
-                this->tags->inc_size(0, last_inc);
+                this->tags->inc_size(0, last_inc + 1);
             }
             last_inc = (last_inc + 1) % (num_tcs - 1);
         }
@@ -2065,18 +2114,18 @@ DiamondCache<TagStore>::adjustPartition()
         {
             if (this->tags->assoc_of_tc(0) > H_min)
             {
-                numSets = this->tags->dec_size(0, last_dec);
+                numSets = this->tags->dec_size(0, last_dec + 1);
             
     			// write back if the block is dirty
     			for(unsigned k = 0; k < numSets; k++){
-    				BlkType *tempBlk = this->tags->get_evictBlk(last_dec, k);
-    				if (tempBlk->threadID != last_dec){
+    				BlkType *tempBlk = this->tags->get_evictBlk(last_dec + 1, k);
+    				if (tempBlk->threadID != last_dec + 1){
     					if(tempBlk->isDirty() && tempBlk->isValid())
     						this->allocateWriteBuffer(this->writebackBlk(tempBlk, tempBlk->threadID), curTick(), true); 
 
-    					this->tags->invalidateBlk(tempBlk, last_dec);
+    					this->tags->invalidateBlk(tempBlk, last_dec + 1);
 
-    					tempBlk->threadID = last_dec;	
+    					tempBlk->threadID = last_dec + 1;	
     				}	
     			}
             }

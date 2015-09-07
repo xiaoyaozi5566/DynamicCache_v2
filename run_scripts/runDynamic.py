@@ -674,6 +674,7 @@ def diamond_cache():
                     command += "    --maxtick=2000000000000000 \\\n"
                     command += "    --numpids=3 \\\n"
                     command += "    --numcores=4 \\\n"
+                    command += "    --L_assoc=8 \\\n"
                     command += "    --th_inc=" + str(threshold) + " \\\n"
                     command += "    --th_dec=" + str(threshold) + " \\\n"
                     command += "    --p0='" + specintinvoke[p0] + "'\\\n"
@@ -687,6 +688,48 @@ def diamond_cache():
                     
                     os.system("qsub -cwd -e stderr/" + folder + "/ -o stdout/" + folder + "/ " +
                     scriptgen_dir + "/run_" + filename)
+
+def count_phases():
+    for cpu in cpus:
+        for workload in multiprog:
+            for H_min in H_mins:
+                for threshold in thresholds:
+                    p0 = workload[0]
+                    p1 = workload[1]
+                    filename = cpu + "_" + "phases" + "_" + p0 + "_" + p1 + "_" + str(H_min) + "_" + str(int(threshold*100))
+                    script = open(scriptgen_dir + "/run_" + filename, "w")
+                    command = "#!/bin/bash\n"
+                    command += "build/ARM/gem5.fast \\\n"
+                    command += "    --remote-gdb-port=0 \\\n"
+                    command += "    --outdir=m5out/" + folder + " \\\n"
+                    command += "    --stats-file=" + filename + "_stats.txt \\\n"
+                    command += "    configs/dramsim2/dramsim2_se.py \\\n"
+                    command += "    --fixaddr \\\n"
+                    command += "    --cpu-type=" + cpu + " \\\n"
+                    command += "    --caches \\\n"
+                    command += "    --l2cache \\\n"
+                    command += "    --l2config=shared \\\n"
+                    command += "    --l2_size=1024kB \\\n"
+                    command += "    --l2_assoc=8 \\\n"
+                    command += "    --lattice_cache \\\n"
+                    command += "    --dynamic_cache \\\n"
+                    command += "    --fast-forward=1000000000 \\\n"
+                    command += "    --maxinsts=250000000 \\\n"
+                    command += "    --maxtick=2000000000000000 \\\n"
+                    command += "    --numpids=2 \\\n"
+                    command += "    --H_min=" + str(H_min) + " \\\n"
+                    command += "    --th_inc=" + str(threshold) + " \\\n"
+                    command += "    --th_dec=" + str(threshold) + " \\\n"
+                    command += "    --p0='" + specintinvoke[p0] + "'\\\n"
+                    command += "    --p1='" + specintinvoke[p1] + "'\\\n"
+                    command += "    > " + results_dir + "/" + folder + "/stdout_" + filename + ".out"
+
+                    script.write("%s\n" % command)
+                    script.close()
+                    
+                    os.system("qsub -cwd -e stderr/" + folder + "/ -o stdout/" + folder + "/ " + 
+                    scriptgen_dir + "/run_" + filename)
+                    
 # Main
 # singleprog()
 # miss_curve()
@@ -699,4 +742,5 @@ def diamond_cache():
 # dynamic_cache4()
 # baseline_QoS()
 # dynamic_QoS()
-diamond_cache()
+# diamond_cache()
+count_phases()

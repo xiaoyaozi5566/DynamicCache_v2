@@ -116,7 +116,7 @@ template class LatticeCache<LATTLRU>;
 template class DiamondCache<LATTLRU>;
 #endif
 
-#if defined(USE_CACHE_LATT)
+#if defined(USE_CACHE_DIA)
 template class Cache<DIALRU>;
 template class DynamicCache<DIALRU>;
 template class UtilityCache<DIALRU>;

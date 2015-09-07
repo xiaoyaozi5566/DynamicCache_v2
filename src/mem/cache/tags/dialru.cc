@@ -16,12 +16,12 @@ DIALRU::DIALRU( unsigned _numSets,
         unsigned _low_assoc)
     : LRU(_numSets, _blkSize, _assoc, _hit_latency )
 {
-	assoc = _assoc - _low_assoc;
+	assoc = _assoc;
 	num_tcs = _num_tcs;
 	per_assoc = new unsigned[num_tcs];
     per_assoc[0] = _low_assoc;
 	for (unsigned i = 1; i < num_tcs; i++)
-		per_assoc[i] = assoc/(num_tcs-1);
+		per_assoc[i] = (assoc - _low_assoc)/(num_tcs-1);
 	// umon counters
 	umon_counters = new unsigned*[num_tcs];
 	for (unsigned i = 0; i < num_tcs; i++)
@@ -144,7 +144,7 @@ DIALRU::inc_size(uint64_t tid0, uint64_t tid1){
 	per_assoc[tid0] += 1;
 	per_assoc[tid1] -= 1;
 	
-	fprintf(stderr, "assoc: %d %d %d %d\n", per_assoc[0], per_assoc[1], per_assoc[2], per_assoc[3]);
+	fprintf(stderr, "assoc: %d %d %d\n", per_assoc[0], per_assoc[1], per_assoc[2]);
 	
 	for( unsigned i = 0; i < numSets; i++){
 		// increase the size of L partition
@@ -178,7 +178,7 @@ DIALRU::dec_size(uint64_t tid0, uint64_t tid1){
 	per_assoc[tid0] -= 1;
 	per_assoc[tid1] += 1;
 	
-	fprintf(stderr, "assoc: %d %d %d %d\n", per_assoc[0], per_assoc[1], per_assoc[2], per_assoc[3]);
+	fprintf(stderr, "assoc: %d %d %d\n", per_assoc[0], per_assoc[1], per_assoc[2]);
 	
 	for( unsigned i = 0; i < numSets; i++){
 		// increase the size of H partition

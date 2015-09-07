@@ -34,6 +34,8 @@ private:
 	unsigned num_tcs;
 	// number of reserved ways
 	unsigned H_min;
+    // round-robin for incomparable levels
+    unsigned last_inc, last_dec;
 	
 	System *system;
 };

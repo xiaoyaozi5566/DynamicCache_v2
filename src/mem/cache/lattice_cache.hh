@@ -34,6 +34,8 @@ private:
 	unsigned num_tcs;
 	// number of reserved ways
 	unsigned H_min;
+    // count the number of different phase combinations
+    unsigned phase_combinations[4];
 	
 	System *system;
 };
