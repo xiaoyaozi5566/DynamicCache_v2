@@ -737,7 +737,7 @@ def dumb_flush():
                 for threshold in thresholds:
                     p0 = workload[0]
                     p1 = workload[1]
-                    filename = cpu + "_" + "dynamic" + "_" + p0 + "_" + p1 + "_" + str(H_min) + "_" + str(int(threshold*100))
+                    filename = cpu + "_" + "dumb_flush" + "_" + p0 + "_" + p1 + "_" + str(H_min) + "_" + str(int(threshold*100))
                     script = open(scriptgen_dir + "/run_" + filename, "w")
                     command = "#!/bin/bash\n"
                     command += "build/ARM/gem5.fast \\\n"
