@@ -140,6 +140,7 @@ class L2Shared( L2Config ):
                             dynamic_cache=options.dynamic_cache,
                             util_cache=options.util_cache,
                             lattice_cache=options.lattice_cache,
+                            dumb_flush=options.dumb_flush,
                             L_assoc=options.L_assoc,
                             H_min=options.H_min,
                             th_inc=options.th_inc,

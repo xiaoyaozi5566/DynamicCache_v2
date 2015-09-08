@@ -70,6 +70,7 @@ class BaseCache(MemObject):
     util_cache = Param.Bool(False, "Use utility cache implementation")
     lattice_cache = Param.Bool(False, "Use lattice cache implementation")
     diamond_cache = Param.Bool(False, "Use diamond cache implementation")
+    dumb_flush = Param.Bool(False, "Use dumb flush")
     num_tcs = Param.Int(2, "number of security domains")
     L_assoc = Param.Int(4, "associativity for Low partition")
     H_min = Param.Int(1, "minimal # of ways reserved for High partition")

@@ -1746,6 +1746,8 @@ DynamicCache<TagStore>::DynamicCache( const Params *p, TagStore *tags )
 	system = p->system;
 	
 	th_dec = p->th_dec;
+    
+    dumb_flush = p->dumb_flush;
 	
 	if(p->dynamic_cache) this->schedule(adjustEvent, interval);
 }
@@ -1781,7 +1783,21 @@ template<class TagStore>
 void
 DynamicCache<TagStore>::inc_size()
 {
-	this->tags->inc_size();
+	unsigned numSets = this->tags->inc_size();
+    if (dumb_flush) {
+        printf("Use dumb flush\n");
+        for(unsigned i = 0; i < numSets; i++){
+            BlkType *tempBlk = this->tags->get_evictBlk(0, i);
+            if (tempBlk->threadID == 1){
+    			if(tempBlk->isDirty() && tempBlk->isValid())
+    				this->allocateWriteBuffer(this->writebackBlk(tempBlk, 1), curTick(), true);
+                
+                this->tags->invalidateBlk(tempBlk, 0);
+                
+                tempBlk->threadID = 0;
+            }
+        }
+    }
 }
 
 template<class TagStore>

@@ -30,6 +30,8 @@ private:
 	float th_inc, th_dec;
 	// Static miss curve
 	unsigned assoc;
+    // Use dumb flush
+    bool dumb_flush;
 	
 	System *system;
 };
