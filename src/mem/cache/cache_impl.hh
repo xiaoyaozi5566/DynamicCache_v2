@@ -1959,7 +1959,7 @@ LatticeCache<TagStore>::adjustPartition()
             int total_accesses_H = 0;
             // 0 means cache insensitive, 1 means cache sensitive
             int L_phase, H_phase;
-            for (unsigned i = 0; i < assoc; i++)
+            for (unsigned i = 1; i < assoc; i++)
             {
                 total_hits_L += this->tags->lookup_umon(i, 0);
                 total_hits_H += this->tags->lookup_umon(i, 1);
